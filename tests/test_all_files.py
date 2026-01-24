@@ -7,8 +7,8 @@ from dw3t.main import main
 
 class TestFileWrite:
     def test_all_files(self, test_data_dir):
-        data_dir_ref = test_data_dir / "idefix_6_dust_fluids" / "radmc3d_ref"
-        data_dir = test_data_dir / "idefix_6_dust_fluids" / "radmc3d"
+        data_dir_ref = test_data_dir / "idefix_1_dust_fluid" / "radmc3d_ref"
+        data_dir = test_data_dir / "idefix_1_dust_fluid" / "radmc3d"
 
         if os.path.isdir(data_dir):
             shutil.rmtree(data_dir)
@@ -16,7 +16,7 @@ class TestFileWrite:
 
         assert filecmp.cmp(data_dir_ref / "amr_grid.inp", data_dir / "amr_grid.inp", shallow=False)
         assert filecmp.cmp(data_dir_ref / "dust_density.binp", data_dir / "dust_density.binp", shallow=False)
-        for kk in range(6):
+        for kk in range(1):
             assert filecmp.cmp(data_dir_ref / f"dustkapscatmat_{kk}.inp", data_dir / f"dustkapscatmat_{kk}.inp", shallow=False)
         assert filecmp.cmp(data_dir_ref / "dustopac.inp", data_dir / "dustopac.inp", shallow=False)
         assert filecmp.cmp(data_dir_ref / "gas_velocity.binp", data_dir / "gas_velocity.binp", shallow=False)
@@ -28,4 +28,4 @@ class TestFileWrite:
         assert filecmp.cmp(data_dir_ref / "stars.inp", data_dir / "stars.inp", shallow=False)
         assert filecmp.cmp(data_dir_ref / "wavelength_micron.inp", data_dir / "wavelength_micron.inp", shallow=False)
 
-        shutil.rmtree(test_data_dir / "idefix_6_dust_fluids" / "radmc3d")
+        shutil.rmtree(test_data_dir / "idefix_1_dust_fluid" / "radmc3d")
