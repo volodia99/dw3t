@@ -13,6 +13,7 @@ dependencies = [
     "inifix>=6.1.1",
     "nonos>=0.19.1",
     "numpy>=2.4.0",
+    "toml>=0.10.2",
 ]
 
 [project.scripts]

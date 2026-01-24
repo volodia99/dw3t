@@ -6,7 +6,7 @@ from pathlib import Path
 
 import numpy as np
 
-import inifix
+import toml
 from nonos.api import GasDataSet
 
 from dw3t.model import load_model, Opacity
@@ -31,7 +31,7 @@ def main(argv: list[str] | None = None) -> int:
     #TODO: think if CLI or minimalist parameter file? Other option?
     parser = get_parser()
     args = parser.parse_args(argv)
-    config = inifix.load(args.parameter_file)
+    config = toml.load(args.parameter_file)
 
     file = config["simulation"]["on"]
     input_dir = config["simulation"]["input_dir"]
@@ -94,6 +94,7 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     # Writing config to output directory
-    inifix.dump(config, os.path.join(config["simulation"]["output_dir"], "dw3t.ini"))
+    with open(os.path.join(config["simulation"]["output_dir"], "dw3t.full.toml"), 'w') as f:
+        output_toml = toml.dump(config, f)
 
     return 0

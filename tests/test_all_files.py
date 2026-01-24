@@ -12,7 +12,8 @@ class TestFileWrite:
 
         if os.path.isdir(data_dir):
             shutil.rmtree(data_dir)
-        main([str(test_data_dir / "dw3t.ini")])
+
+        main([str(test_data_dir / "dw3t.toml")])
 
         assert filecmp.cmp(data_dir_ref / "amr_grid.inp", data_dir / "amr_grid.inp", shallow=False)
         assert filecmp.cmp(data_dir_ref / "dust_density.binp", data_dir / "dust_density.binp", shallow=False)
