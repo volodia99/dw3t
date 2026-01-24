@@ -1,0 +1,28 @@
+[project]
+name = "dw3t"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "gwf" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "astropy>=7.2.0",
+    "dsharp-opac>=1.1.13",
+    "inifix>=6.1.1",
+    "nonos>=0.19.1",
+    "numpy>=2.4.0",
+]
+
+[project.scripts]
+dw3t = "dw3t.main:main"
+
+[build-system]
+requires = ["uv_build>=0.9.17,<0.10.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+]
