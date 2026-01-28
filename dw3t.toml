@@ -3,11 +3,16 @@ on                      = 0                                                     
 input_dir               = "tests/data/idefix_1_dust_fluid"                                         #necessary
 unit_length_au          = 93.0                                                                    #necessary
 unit_mass_msun          = 1.2                                                                     #necessary
-processing              = "template:phi_expansion"                                                  #optional/to_be_improved?
 component               = ["dust", "gas"]                                                                 #necessary/to_be_improved_with_section?
 internal_rho            = 2.0                                                                     #to_be_improved?
 output_dir              = "tests/data/idefix_1_dust_fluid/radmc3d_ref"                                 #optional
 simulation_files_only   = false                                                                   #optional
+
+processing              = [                                                                     #optional/to_be_improved?
+    {mode = "identity"},
+    {mode = "phi_expansion", nphi = 128},
+    # {mode = "mask_inner", inner_edge = 1.5},
+]
 
 [dust.opacity]
 mix                     = "birnstiel2018"                                                           #necessary
