@@ -705,10 +705,12 @@ def load_model(
     if component in ("dust", "dustgas", "gasdust"):
         print(f"WARNING: {component=} not implemented in a general way with nonos. Implementation specific to IDEFIX.")
         directory = ds._parameters_input["directory"]
-        #TODO Hard-coded value
         rhoint_csg = config["simulation"]["internal_rho"]*(u.g/u.cm/u.cm/u.cm)
         print(f"WARNING: RHOINT={rhoint_csg}, fixed for now.")
         inifile = inifix.load(os.path.join(directory, "idefix.ini"))
+        dragType = inifile["Dust"]["drag"][0]
+        if dragType!="size":
+            raise ValueError(f"{dragType=} should be 'size'.")
         dustBeta = np.array(inifile["Dust"]["drag"][1:])
         dustSize = computeSizeMM(
             dustBeta, 
