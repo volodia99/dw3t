@@ -86,8 +86,11 @@ def main(argv: list[str] | None = None) -> int:
     model.write_files(
         directory=config["simulation"]["output_dir"],
         write_opacities=True,
-        opacity=Opacity(opacity=config["opacity"]["mix"], rho=config["opacity"]["rho"]),
-        smoothing=config["opacity"]["smoothing"],
+        opacity=Opacity(
+            mix=config["dust"]["opacity"]["mix"], 
+            rho=config["dust"]["opacity"]["rho"]
+        ),
+        smoothing=config["dust"]["opacity"]["smoothing"],
         simulation_files_only=config["simulation"]["simulation_files_only"],
         config=config,
     )

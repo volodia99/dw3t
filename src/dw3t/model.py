@@ -60,13 +60,20 @@ class Gas:
 #TODO: Opacity to be improved
 @dataclass(kw_only=True, slots=True)
 class Opacity:
-    opacity:str
+    mix:str
     rho:float|None=None
 
     def __post_init__(self):
-        if self.opacity.endswith(".lnk"):
-            self.opacity = do.diel_from_lnk_file(self.opacity)
-            self.opacity.rho = self.rho
+        if self.mix.endswith(".lnk"):
+            self.mix = do.diel_from_lnk_file(self.mix)
+            if self.rho=="unset":
+                raise ValueError(
+                    f"Internal density of the mix has to be defined. Please provide 'rho' in dust.opacity."
+                )
+            self.mix.rho = self.rho
+        else:
+            if self.rho!="unset":
+                print("WARNING: unused 'rho' when using dsharp_opac mix.")
 
 @dataclass(kw_only=True, slots=True)
 class Model:
@@ -144,7 +151,7 @@ class Model:
             if write_opacities:
                 self.write_opacity_files(
                     directory=directory,
-                    opacity=opacity.opacity,
+                    opacity=opacity.mix,
                     smoothing=smoothing,
                     config=config,
                 )

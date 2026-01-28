@@ -9,10 +9,14 @@ internal_rho            = 2.0                                                   
 output_dir              = "tests/data/idefix_1_dust_fluid/radmc3d_ref"                                 #optional
 simulation_files_only   = false                                                                   #optional
 
-[opacity]
+[dust.opacity]
 mix                     = "birnstiel2018"                                                           #necessary
-rho                     = 1.26                                                                    #optional/None/to_be_improved?
+rho                     = "unset"                                                                    #optional/None/to_be_improved?
 smoothing               = false                                                                   #optional/to_be_tested
+# [dust.opacity]
+# mix                     = "/home/gwf/projects/fargo2radmc3d/opac/mix_2species_ice70.lnk"                    #necessary
+# rho                     = 1.26                                                                              #necessary when .lnk
+# smoothing               = false                                                                             #optional
 
 [radmc3d]                                                                                       #optional
 modified_random_walk    = 1
