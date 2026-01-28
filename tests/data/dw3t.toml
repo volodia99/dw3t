@@ -13,10 +13,6 @@ simulation_files_only   = false                                                 
 mix                     = "birnstiel2018"                                                           #necessary
 rho                     = "unset"                                                                    #optional/None/to_be_improved?
 smoothing               = false                                                                   #optional/to_be_tested
-# [dust.opacity]
-# mix                     = "/home/gwf/projects/fargo2radmc3d/opac/mix_2species_ice70.lnk"                    #necessary
-# rho                     = 1.26                                                                              #necessary when .lnk
-# smoothing               = false                                                                             #optional
 
 [radmc3d]                                                                                       #optional
 modified_random_walk    = 1
@@ -38,6 +34,9 @@ lambda_min              = 1
 lambda_max              = 10000
 Nlam                    = 200
 
-[gas]
-molecule_name           = "co"                                                                      #necessary_if_gas
-molecule_abundance      = 1e-4                                                                    #necessary_if_gas
+[gas]                                                                                                       #necessary_if_gas
+species                 = "co"                                                                              
+
+[gas.abundance]
+mode                    = "constant"
+value                   = 1e-4                                                                           

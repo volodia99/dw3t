@@ -264,7 +264,7 @@ class Model:
             raise ValueError("directory for RT calculation should be specified.")
         path = os.path.join(directory, filename)
 
-        molecule_name = config["molecule_name"]
+        species = config["species"]
         #TODO: be more flexible for NON-LTE calculations?
         non_lte = 0
 
@@ -273,7 +273,7 @@ class Model:
             f.write("2\n")
             f.write("1\n")
             f.write(
-                f"{molecule_name} "\
+                f"{species} "\
                 "leiden "\
                 f"{0:d} "\
                 f"{0:d} "\
@@ -290,15 +290,15 @@ class Model:
         directory : str, required, default: None
             Data directory in which the files are written.
         """
-        molecule_name = config["molecule_name"]
-        filename = f"molecule_{molecule_name}.inp"
+        species = config["species"]
+        filename = f"molecule_{species}.inp"
         if directory is None:
             raise ValueError("directory for RT calculation should be specified.")
         path = os.path.join(directory, filename)
 
         # print(f"INFO: Writing {path}.....", end="")
         urllib.request.urlretrieve(
-            f"https://home.strw.leidenuniv.nl/~moldata/datafiles/{molecule_name}.dat", 
+            f"https://home.strw.leidenuniv.nl/~moldata/datafiles/{species}.dat", 
             path,
         )
 
@@ -551,9 +551,11 @@ class Model:
             Data directory in which the files are written.
         """
         config_gas = config["gas"]
-        molecule_name = config_gas["molecule_name"]
-        molecule_abundance = config_gas["molecule_abundance"]
-        filename = f"numberdens_{molecule_name}.binp"
+        species = config_gas["species"]
+        abundance = config_gas["abundance"]
+        if abundance["mode"] not in ("constant", "array"):
+            raise ValueError(f"abundance.mode = {abundance["mode"]}. Should be 'constant' or 'array' from npz file.")
+        filename = f"numberdens_{species}.binp"
         if directory is None:
             raise ValueError("directory for RT calculation should be specified.")
         path = os.path.join(directory, filename)
@@ -562,7 +564,10 @@ class Model:
         numberrho_H2 = self.gas.rho/(MUSTAR*uc.m_p.to(u.g))
         if numberrho_H2.unit!=1/u.cm**3:
             raise ValueError(f"gas rho field unit should be 1/cm^3, not {numberrho_H2.unit}.")
-        numberrho = numberrho_H2*molecule_abundance
+        if abundance["mode"]=="constant":
+            numberrho = numberrho_H2*abundance["value"]
+        elif abundance["mode"]=="array":
+            raise NotImplementedError("mode='array' not yet implemented.")
         print(f"INFO: Writing {path}.....", end="")
         with open(path, "wb") as f:
             header = np.array([1, 8, numberrho.flatten().shape[0]], dtype=int)
