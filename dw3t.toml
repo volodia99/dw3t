@@ -29,10 +29,10 @@ R_star                  = 2.0                                                   
 T_star                  = 7000.0                                                                  #necessary_if_star
 mu_star                 = 1.37                                                                    #optional
 
-[wavelength_micron]                                                                             #optional
-lambda_min              = 1
-lambda_max              = 10000
-Nlam                    = 200
+[wavelength_micron]
+min                     = 1                                                                                 #optional
+max                     = 10_000                                                                            #optional
+N                       = 200                                                                               #optional
 
 [gas]                                                                                                       #necessary_if_gas
 species                 = "co"                                                                              
