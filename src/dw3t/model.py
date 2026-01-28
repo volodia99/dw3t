@@ -135,11 +135,11 @@ class Model:
             self._write_radmc3d_inp(directory=directory, config=config["radmc3d"])
             self._write_stars_inp(directory=directory, config=config)
             self._write_wavelength_micron_inp(directory=directory, config=config["wavelength_micron"])
-            if self.component in ("gas", "dustgas", "gasdust"):
+            if "gas" in self.component:
                 self._write_lines_inp(directory=directory, config=config["gas"])
                 self._write_molecule_inp(directory=directory, config=config["gas"])
         self._write_amr_grid_inp(directory=directory)
-        if self.component in ("dust", "dustgas", "gasdust"):
+        if "dust" in self.component:
             self._write_dust_density_inp(directory=directory)
             if write_opacities:
                 self.write_opacity_files(
@@ -148,7 +148,7 @@ class Model:
                     smoothing=smoothing,
                     config=config,
                 )
-        if self.component in ("gas", "dustgas", "gasdust"):
+        if "gas" in self.component:
             self._write_numberdens_inp(directory=directory, config=config)
             self._write_gas_velocity_inp(directory=directory)
         self._write_metadata(directory=directory)
@@ -689,11 +689,11 @@ def load_model(
         component=component,
         geometry=Geometry(ds.native_geometry)
     )
-    if component not in ("gas", "dust", "dustgas", "gasdust"):
+    if not (set(component) & set(["gas","dust"])):
         raise ValueError(
-            f"{component=} should be 'gas', 'dust', 'dustgas' or 'gasdust'"
+            f"{component=} should be 'gas', 'dust' or ['dust', 'gas']."
         )
-    if component in ("gas", "dustgas", "gasdust"):
+    if "gas" in component:
         #TODO: add flexibility
         print(f"WARNING: Assuming no omegraframe.")
         model.gas = Gas(
@@ -702,8 +702,8 @@ def load_model(
             v2 = ((ds["VX2"].data * UNIT_VELOCITY).to(u.cm / u.s)),#.value,
             v3 = ((ds["VX3"].data * UNIT_VELOCITY).to(u.cm / u.s)),#.value,
         )
-    if component in ("dust", "dustgas", "gasdust"):
-        print(f"WARNING: {component=} not implemented in a general way with nonos. Implementation specific to IDEFIX.")
+    if "dust" in component:
+        print(f"WARNING: 'dust' not implemented in a general way with nonos. Implementation specific to IDEFIX.")
         directory = ds._parameters_input["directory"]
         rhoint_csg = config["simulation"]["internal_rho"]*(u.g/u.cm/u.cm/u.cm)
         print(f"WARNING: RHOINT={rhoint_csg}, fixed for now.")

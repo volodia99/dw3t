@@ -38,18 +38,17 @@ def main(argv: list[str] | None = None) -> int:
     ds = GasDataSet(file, directory=input_dir)
 
     component = config["simulation"]["component"]
-    if component not in ("dust", "gas", "dustgas", "gasdust"):
+    component = np.atleast_1d(component).tolist()
+    if not (set(component) & set(["gas","dust"])):
         raise ValueError(
-            f"{component=} should be 'dust', 'gas', 'dustgas' (or equivalently 'gasdust')."
+            f"{component=} should be 'dust', 'gas' or ['dust', 'gas']."
         )
-    if component=="gasdust":
-        component="dustgas"
 
     model = load_model(
         ds=ds,
         unit_length_au=config["simulation"]["unit_length_au"],
         unit_mass_msun=config["simulation"]["unit_mass_msun"],
-        component=config["simulation"]["component"],
+        component=component,
         config=config,
     )
 
