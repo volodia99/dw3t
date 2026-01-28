@@ -3,15 +3,19 @@ on                      = 0                                                     
 input_dir               = "tests/data/idefix_1_dust_fluid"                                         #necessary
 unit_length_au          = 93.0                                                                    #necessary
 unit_mass_msun          = 1.2                                                                     #necessary
-processing              = "template:phi_expansion"                                                  #optional/to_be_improved?
-component               = "dustgas"                                                                 #necessary/to_be_improved_with_section?
+component               = ["dust", "gas"]                                                                 #necessary/to_be_improved_with_section?
 internal_rho            = 2.0                                                                     #to_be_improved?
 output_dir              = "tests/data/idefix_1_dust_fluid/radmc3d"                                 #optional
 simulation_files_only   = false                                                                   #optional
+processing              = [                                                                     #optional/to_be_improved?
+    {mode = "identity"},
+    {mode = "phi_expansion", nphi = 128},
+    # {mode = "mask_inner", inner_edge = 1.5},
+]
 
-[opacity]
+[dust.opacity]
 mix                     = "birnstiel2018"                                                           #necessary
-rho                     = 1.26                                                                    #optional/None/to_be_improved?
+rho                     = "unset"                                                                    #optional/None/to_be_improved?
 smoothing               = false                                                                   #optional/to_be_tested
 
 [radmc3d]                                                                                       #optional
@@ -29,11 +33,14 @@ R_star                  = 2.0                                                   
 T_star                  = 7000.0                                                                  #necessary_if_star
 mu_star                 = 1.37                                                                    #optional
 
-[wavelength_micron]                                                                             #optional
-lambda_min              = 1
-lambda_max              = 10000
-Nlam                    = 200
+[wavelength_micron]
+min                     = 1                                                                                 #optional
+max                     = 10_000                                                                            #optional
+N                       = 200                                                                               #optional
 
-[gas]
-molecule_name           = "co"                                                                      #necessary_if_gas
-molecule_abundance      = 1e-4                                                                    #necessary_if_gas
+[gas]                                                                                                       #necessary_if_gas
+species                 = "co"                                                                              
+
+[gas.abundance]
+mode                    = "constant"
+value                   = 1e-4                                                                           

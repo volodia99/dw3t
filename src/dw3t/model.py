@@ -60,13 +60,20 @@ class Gas:
 #TODO: Opacity to be improved
 @dataclass(kw_only=True, slots=True)
 class Opacity:
-    opacity:str
+    mix:str
     rho:float|None=None
 
     def __post_init__(self):
-        if self.opacity.endswith(".lnk"):
-            self.opacity = do.diel_from_lnk_file(self.opacity)
-            self.opacity.rho = self.rho
+        if self.mix.endswith(".lnk"):
+            self.mix = do.diel_from_lnk_file(self.mix)
+            if self.rho=="unset":
+                raise ValueError(
+                    f"Internal density of the mix has to be defined. Please provide 'rho' in dust.opacity."
+                )
+            self.mix.rho = self.rho
+        else:
+            if self.rho!="unset":
+                print("WARNING: unused 'rho' when using dsharp_opac mix.")
 
 @dataclass(kw_only=True, slots=True)
 class Model:
@@ -135,20 +142,20 @@ class Model:
             self._write_radmc3d_inp(directory=directory, config=config["radmc3d"])
             self._write_stars_inp(directory=directory, config=config)
             self._write_wavelength_micron_inp(directory=directory, config=config["wavelength_micron"])
-            if self.component in ("gas", "dustgas", "gasdust"):
+            if "gas" in self.component:
                 self._write_lines_inp(directory=directory, config=config["gas"])
                 self._write_molecule_inp(directory=directory, config=config["gas"])
         self._write_amr_grid_inp(directory=directory)
-        if self.component in ("dust", "dustgas", "gasdust"):
+        if "dust" in self.component:
             self._write_dust_density_inp(directory=directory)
             if write_opacities:
                 self.write_opacity_files(
                     directory=directory,
-                    opacity=opacity.opacity,
+                    opacity=opacity.mix,
                     smoothing=smoothing,
                     config=config,
                 )
-        if self.component in ("gas", "dustgas", "gasdust"):
+        if "gas" in self.component:
             self._write_numberdens_inp(directory=directory, config=config)
             self._write_gas_velocity_inp(directory=directory)
         self._write_metadata(directory=directory)
@@ -193,7 +200,7 @@ class Model:
 
         # Set up a wavelength grid (in micron) upon which we want to compute the opacities
         config_wavelength_micron = config["wavelength_micron"]
-        lam_grid = np.linspace(config_wavelength_micron["lambda_min"],config_wavelength_micron["lambda_max"],config_wavelength_micron["Nlam"])*u.micron
+        lam_grid = np.linspace(config_wavelength_micron["min"],config_wavelength_micron["max"],config_wavelength_micron["N"])*u.micron
         lam_grid = lam_grid.value
         R_star = (config["stars"]["R_star"]*u.R_sun).to(u.cm).value
         #TODO: use unit_mass_msun instead?
@@ -233,7 +240,7 @@ class Model:
         path = os.path.join(directory, filename)
 
         # Set up a wavelength grid (in micron) upon which we want to compute the opacities
-        lam_grid = np.linspace(config["lambda_min"],config["lambda_max"],config["Nlam"])*u.micron
+        lam_grid = np.linspace(config["min"],config["max"],config["N"])*u.micron
         lam_grid = lam_grid.value
 
         print(f"INFO: Writing {path}.....", end="")
@@ -257,7 +264,7 @@ class Model:
             raise ValueError("directory for RT calculation should be specified.")
         path = os.path.join(directory, filename)
 
-        molecule_name = config["molecule_name"]
+        species = config["species"]
         #TODO: be more flexible for NON-LTE calculations?
         non_lte = 0
 
@@ -266,7 +273,7 @@ class Model:
             f.write("2\n")
             f.write("1\n")
             f.write(
-                f"{molecule_name} "\
+                f"{species} "\
                 "leiden "\
                 f"{0:d} "\
                 f"{0:d} "\
@@ -283,15 +290,15 @@ class Model:
         directory : str, required, default: None
             Data directory in which the files are written.
         """
-        molecule_name = config["molecule_name"]
-        filename = f"molecule_{molecule_name}.inp"
+        species = config["species"]
+        filename = f"molecule_{species}.inp"
         if directory is None:
             raise ValueError("directory for RT calculation should be specified.")
         path = os.path.join(directory, filename)
 
         # print(f"INFO: Writing {path}.....", end="")
         urllib.request.urlretrieve(
-            f"https://home.strw.leidenuniv.nl/~moldata/datafiles/{molecule_name}.dat", 
+            f"https://home.strw.leidenuniv.nl/~moldata/datafiles/{species}.dat", 
             path,
         )
 
@@ -410,7 +417,7 @@ class Model:
         #TODO: be more flexible?
         Nangle = 181
         # Set up a wavelength grid (in micron) upon which we want to compute the opacities
-        lam_grid = np.linspace(config["lambda_min"],config["lambda_max"],config["Nlam"])*u.micron
+        lam_grid = np.linspace(config["min"],config["max"],config["N"])*u.micron
         Nlam = lam_grid.shape[0]
 
         dustsize = self.dust.size.to(u.cm).value
@@ -544,9 +551,11 @@ class Model:
             Data directory in which the files are written.
         """
         config_gas = config["gas"]
-        molecule_name = config_gas["molecule_name"]
-        molecule_abundance = config_gas["molecule_abundance"]
-        filename = f"numberdens_{molecule_name}.binp"
+        species = config_gas["species"]
+        abundance = config_gas["abundance"]
+        if abundance["mode"] not in ("constant", "array"):
+            raise ValueError(f"abundance.mode = {abundance["mode"]}. Should be 'constant' or 'array' from npz file.")
+        filename = f"numberdens_{species}.binp"
         if directory is None:
             raise ValueError("directory for RT calculation should be specified.")
         path = os.path.join(directory, filename)
@@ -555,7 +564,10 @@ class Model:
         numberrho_H2 = self.gas.rho/(MUSTAR*uc.m_p.to(u.g))
         if numberrho_H2.unit!=1/u.cm**3:
             raise ValueError(f"gas rho field unit should be 1/cm^3, not {numberrho_H2.unit}.")
-        numberrho = numberrho_H2*molecule_abundance
+        if abundance["mode"]=="constant":
+            numberrho = numberrho_H2*abundance["value"]
+        elif abundance["mode"]=="array":
+            raise NotImplementedError("mode='array' not yet implemented.")
         print(f"INFO: Writing {path}.....", end="")
         with open(path, "wb") as f:
             header = np.array([1, 8, numberrho.flatten().shape[0]], dtype=int)
@@ -689,11 +701,11 @@ def load_model(
         component=component,
         geometry=Geometry(ds.native_geometry)
     )
-    if component not in ("gas", "dust", "dustgas", "gasdust"):
+    if not (set(component) & set(["gas","dust"])):
         raise ValueError(
-            f"{component=} should be 'gas', 'dust', 'dustgas' or 'gasdust'"
+            f"{component=} should be 'gas', 'dust' or ['dust', 'gas']."
         )
-    if component in ("gas", "dustgas", "gasdust"):
+    if "gas" in component:
         #TODO: add flexibility
         print(f"WARNING: Assuming no omegraframe.")
         model.gas = Gas(
@@ -702,13 +714,15 @@ def load_model(
             v2 = ((ds["VX2"].data * UNIT_VELOCITY).to(u.cm / u.s)),#.value,
             v3 = ((ds["VX3"].data * UNIT_VELOCITY).to(u.cm / u.s)),#.value,
         )
-    if component in ("dust", "dustgas", "gasdust"):
-        print(f"WARNING: {component=} not implemented in a general way with nonos. Implementation specific to IDEFIX.")
+    if "dust" in component:
+        print(f"WARNING: 'dust' not implemented in a general way with nonos. Implementation specific to IDEFIX.")
         directory = ds._parameters_input["directory"]
-        #TODO Hard-coded value
         rhoint_csg = config["simulation"]["internal_rho"]*(u.g/u.cm/u.cm/u.cm)
         print(f"WARNING: RHOINT={rhoint_csg}, fixed for now.")
         inifile = inifix.load(os.path.join(directory, "idefix.ini"))
+        dragType = inifile["Dust"]["drag"][0]
+        if dragType!="size":
+            raise ValueError(f"{dragType=} should be 'size'.")
         dustBeta = np.array(inifile["Dust"]["drag"][1:])
         dustSize = computeSizeMM(
             dustBeta, 
