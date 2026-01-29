@@ -6,11 +6,15 @@ from pathlib import Path
 
 import numpy as np
 
-import toml
+import tomli
+import tomli_w
+from deep_chainmap import DeepChainMap
 from nonos.api import GasDataSet
 
 from dw3t.model import load_model, Opacity
 from dw3t._typing import F, FArray2D
+from dw3t._parsing import is_set, list_of_middle_keys
+from dw3t.default import DEFAULT_LAYER, MANDATORY_SET
 
 def get_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
@@ -28,10 +32,33 @@ def get_parser() -> argparse.ArgumentParser:
     return parser
 
 def main(argv: list[str] | None = None) -> int:
-    #TODO: think if CLI or minimalist parameter file? Other option?
     parser = get_parser()
     args = parser.parse_args(argv)
-    config = toml.load(args.parameter_file)
+    with open(args.parameter_file, "rb") as f:
+        config_file_layer = tomli.load(f)
+
+    #TODO: improve handling of mandatory parameters
+    # ensures that we do not add mandatory parameters without knowing it
+    expected_length_mandatory = 7
+    if len(MANDATORY_SET)!=expected_length_mandatory:
+        raise ValueError(
+            f"expecting {expected_length_mandatory} mandatory parameters, not {len(MANDATORY_SET)}."
+        )
+    if "gas" in config_file_layer["simulation"]["component"]:
+        MANDATORY_SET.update(list(config_file_layer["gas"].keys()))
+    if "dust" in config_file_layer["simulation"]["component"]:
+        MANDATORY_SET.update(list(config_file_layer["dust"].keys()))
+    # ensures that all mandatory parameters are defined in toml file
+    if MANDATORY_SET.difference(set(list_of_middle_keys(config_file_layer))):
+        raise ValueError(
+            f"at least one mandatory parameter is missing: {MANDATORY_SET.difference(set(list_of_middle_keys(config_file_layer)))}"
+        )
+
+    config = DeepChainMap(config_file_layer, DEFAULT_LAYER)
+    if not is_set(config["simulation"]["output_dir"]):
+        config["simulation"]["output_dir"] = os.path.join(config["simulation"]["input_dir"], "radmc3d")
+    if not is_set(config["stars"]["M_star"]):
+        config["stars"]["M_star"] = config["simulation"]["unit_mass_msun"]
 
     file = config["simulation"]["on"]
     input_dir = config["simulation"]["input_dir"]
@@ -70,63 +97,46 @@ def main(argv: list[str] | None = None) -> int:
             spec = importlib.util.spec_from_file_location(Path(processing_file).stem, processing_file)
             template_modules = [importlib.util.module_from_spec(spec)]
             spec.loader.exec_module(template_modules[0])
+            kwargs = [processing_dict[0].copy()]
+            del kwargs[0]["mode"]
         else: 
             template_modules = []
+            kwargs = []
             for ii in range(len(processing_category)):
                 try:
                     template_modules.append(importlib.import_module(f"dw3t.template.{processing_category[ii]}", package=None))
+                    kwargs.append(processing_dict[ii].copy())
+                    del kwargs[ii]["mode"]
                 except ModuleNotFoundError:
                     raise ModuleNotFoundError(
                         f"No module named 'template.{processing_category[ii]}'."
                     )
-        for tm in template_modules:
-            model = tm.processing(model=model)
-
-    # if config["simulation"]["processing"] is not None:
-    #     processing_category = config["simulation"]["processing"].split(":")
-    #     if processing_category[0]=="template" and len(processing_category)>1:
-    #         template_modules = []
-    #         for ii in range(1, len(processing_category)):
-    #             try:
-    #                 template_modules.append(importlib.import_module(f"dw3t.template.{processing_category[ii]}", package=None))
-    #             except ModuleNotFoundError:
-    #                 raise ModuleNotFoundError(
-    #                     f"No module named 'template.{processing_category[ii]}'."
-    #                 )
-    #     elif processing_category[0].endswith(".py") and len(processing_category)==1:
-    #         processing_file = processing_category[0]
-    #         if not(os.path.isfile(processing_file)):
-    #             raise FileNotFoundError(f"absolute path of the file '{processing_file}' must exist.")
-    #         spec = importlib.util.spec_from_file_location(Path(processing_file).stem, processing_file)
-    #         template_modules = [importlib.util.module_from_spec(spec)]
-    #         spec.loader.exec_module(template_modules[0])
-    #     else:
-    #         raise ValueError(
-    #             f"{processing_category=} should have the form 'template:func' or path_to_file/file.py."
-    #         )
-    #     for tm in template_modules:
-    #         model = tm.processing(model=model)
+        for tm, kw in zip(template_modules, kwargs):
+            model = tm.processing(model=model, kwargs=kw)
 
     if model.dimension!=3:
         raise ValueError(f"{model.dimension=}D, should be 3D for RADMC3D. Try to post-process the data for it to be 3D.")
 
-    #TODO: Need to improve opacity from .lnk file
     #TODO: test smoothing opacities
-    #TODO: Add default config (ChainMap?) + improve config
-    model.write_files(
-        directory=config["simulation"]["output_dir"],
-        write_opacities=True,
-        opacity=Opacity(
+    if write_opacities:=("dust" in config["simulation"]["component"]):
+        opacity = Opacity(
             mix=config["dust"]["opacity"]["mix"], 
             rho=config["dust"]["opacity"]["rho"]
-        ),
+        )
+    else:
+        opacity = None
+
+    model.write_files(
+        directory=config["simulation"]["output_dir"],
+        write_opacities=write_opacities,
+        opacity=opacity,
         smoothing=config["dust"]["opacity"]["smoothing"],
         simulation_files_only=config["simulation"]["simulation_files_only"],
         config=config,
     )
 
     # Writing config to output directory
-    with open(os.path.join(config["simulation"]["output_dir"], "dw3t.full.toml"), 'w') as f:
-        output_toml = toml.dump(config, f)
+    with open(os.path.join(config["simulation"]["output_dir"], "dw3t.full.toml"), "wb") as f:
+        tomli_w.dump(config, f)
 
     return 0
