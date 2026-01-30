@@ -730,9 +730,9 @@ def load_model(
             unit_length_au=unit_length_au,
             unit_mass_msun=unit_mass_msun,
             )#.value
-        dustSize = np.sort(dustSize)
+        dustSize_ascending_indices = np.argsort(dustSize)
         dustrho = np.empty(model.grid.shape+(len(dustSize),))
-        for kk in range(len(dustSize)):
+        for kk in dustSize_ascending_indices:
             dustrho[..., kk] = ds[f"DUST{kk}_RHO"].data
         model.dust = Dust(
             rho = ((dustrho * UNIT_DENSITY).to(u.g / u.cm**3)),#.value,
