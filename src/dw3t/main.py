@@ -48,6 +48,7 @@ def main(argv: list[str] | None = None) -> int:
         MANDATORY_SET.update(list(config_file_layer["gas"].keys()))
     if "dust" in config_file_layer["simulation"]["component"]:
         MANDATORY_SET.update(list(config_file_layer["dust"].keys()))
+        MANDATORY_SET.update(config_file_layer["simulation"]["internal_rho"])
     # ensures that all mandatory parameters are defined in toml file
     if MANDATORY_SET.difference(set(list_of_middle_keys(config_file_layer))):
         raise ValueError(
