@@ -114,7 +114,7 @@ class Model:
     def write_files(
         self, 
         *, 
-        directory:str|None=None, 
+        directory:str,
         write_opacities:bool=False,
         opacity=None,
         smoothing:bool=False,
@@ -128,12 +128,9 @@ class Model:
 
         Parameters
         ----------
-        directory : str, required, default: None
+        directory : str
             Data directory in which the files are written.
         """
-        if directory is None:
-            raise ValueError("directory for RT calculation should be specified.")
-
         print(f"WARNING: for now writing only the input files related to simulated outputs, "\
         "refer to the RADMC3D documentation to write the mandatory files related to RADMC3D.")
 
@@ -161,20 +158,18 @@ class Model:
             self._write_numberdens_inp(directory=directory, config=config)
             self._write_gas_velocity_inp(directory=directory)
 
-    def _write_radmc3d_inp(self, *, directory:str|None=None, config:dict):
+    def _write_radmc3d_inp(self, *, directory:str, config:dict):
         """
         Adapted from dustpylib (https://dustpylib.readthedocs.io/en/latest/radmc3d.html) method 
         Function writes the 'radmc3d.inp' input file.
 
         Parameters
         ----------
-        directory : str, required, default: None
+        directory : str
             Data directory in which the files are written.
         """
 
         filename = "radmc3d.inp"
-        if directory is None:
-            raise ValueError("directory for RT calculation should be specified.")
         path = os.path.join(directory, filename)
 
         print(f"INFO: Writing {path}.....", end="")
@@ -183,20 +178,18 @@ class Model:
                 f.write(f"{key} = {config[key]}\n")
         print("done.")
 
-    def _write_stars_inp(self, *, directory:str|None=None, config:dict):
+    def _write_stars_inp(self, *, directory:str, config:dict):
         """
         Adapted from dustpylib (https://dustpylib.readthedocs.io/en/latest/radmc3d.html) method 
         Function writes the 'stars.inp' input file.
 
         Parameters
         ----------
-        directory : str, required, default: None
+        directory : str
             Data directory in which the files are written.
         """
 
         filename = "stars.inp"
-        if directory is None:
-            raise ValueError("directory for RT calculation should be specified.")
         path = os.path.join(directory, filename)
 
         # Set up a wavelength grid (in micron) upon which we want to compute the opacities
@@ -223,20 +216,18 @@ class Model:
             f.write(f"-{T_star:.6e}\n")
         print("done.")
 
-    def _write_wavelength_micron_inp(self, *, directory:str|None=None, config:dict):
+    def _write_wavelength_micron_inp(self, *, directory:str, config:dict):
         """
         Adapted from dustpylib (https://dustpylib.readthedocs.io/en/latest/radmc3d.html) method 
         Function writes the 'wavelength_micron.inp' input file.
 
         Parameters
         ----------
-        directory : str, required, default: None
+        directory : str
             Data directory in which the files are written.
         """
 
         filename = "wavelength_micron.inp"
-        if directory is None:
-            raise ValueError("directory for RT calculation should be specified.")
         path = os.path.join(directory, filename)
 
         # Set up a wavelength grid (in micron) upon which we want to compute the opacities
@@ -250,18 +241,16 @@ class Model:
                 f.write(f"{lam:.6e}\n")
         print("done.")
 
-    def _write_lines_inp(self, *, directory:str|None=None, config:dict):
+    def _write_lines_inp(self, *, directory:str, config:dict):
         """
         Function writes the 'lines.inp' input file.
 
         Parameters
         ----------
-        directory : str, required, default: None
+        directory : str
             Data directory in which the files are written.
         """
         filename = "lines.inp"
-        if directory is None:
-            raise ValueError("directory for RT calculation should be specified.")
         path = os.path.join(directory, filename)
 
         species = config["species"]
@@ -281,19 +270,17 @@ class Model:
                 )
         print("done.")
 
-    def _write_molecule_inp(self, *, directory:str|None=None, config:dict):
+    def _write_molecule_inp(self, *, directory:str, config:dict):
         """
         Function writes the 'molecule_*.inp' input file.
 
         Parameters
         ----------
-        directory : str, required, default: None
+        directory : str
             Data directory in which the files are written.
         """
         species = config["species"]
         filename = f"molecule_{species}.inp"
-        if directory is None:
-            raise ValueError("directory for RT calculation should be specified.")
         path = os.path.join(directory, filename)
 
         # print(f"INFO: Writing {path}.....", end="")
@@ -311,7 +298,7 @@ class Model:
 
         Parameters
         ----------
-        directory : str, required, default: None
+        directory : str
             Data directory in which the files are written.
         """
 
@@ -330,16 +317,16 @@ class Model:
         print("done.")
 
     def write_opacity_files(
-            self, *, directory:str|None=None, opacity=None, smoothing:bool=False, config:dict):
+            self, *, directory:str, opacity, smoothing:bool=False, config:dict):
         """
         Adapted from dustpylib (https://dustpylib.readthedocs.io/en/latest/radmc3d.html) method 
         Function writes the required opacity files.
 
         Parameters
         ----------
-        directory : str, required, default: None
+        directory : str
             Data directory in which the files are written.
-        opacity : str or instance of `dharp_opac.diel_const`, required, default: None
+        opacity : str or instance of `dharp_opac.diel_const`
             Opacity model to be used. Either 'birnstiel2018', 'ricci2010', or instance of do.diel_const.
             Could be read from a .lnk file using do.diel_from_lnk_file class, inherited from do.diel_const.
             See https://github.com/birnstiel/dsharp_opac for more details 
@@ -347,8 +334,6 @@ class Model:
             Smooth the opacities by averaging over multiple particle sizes.
             This slows down the computation.
         """
-        if directory is None:
-            raise ValueError("directory for RT calculation should be specified.")
         self._write_dustopac_inp(directory=directory)
         self._write_dustkapscatmat_inp(
             directory=directory,
@@ -357,20 +342,18 @@ class Model:
             config=config["wavelength_micron"],
         )
 
-    def _write_dustopac_inp(self, *, directory:str|None=None):
+    def _write_dustopac_inp(self, *, directory:str):
         """
         Adapted from dustpylib (https://dustpylib.readthedocs.io/en/latest/radmc3d.html) method 
         Function writes the 'dustopac.inp' input file.
 
         Parameters
         ----------
-        directory : str, required, default: None
+        directory : str
             Data directory in which the files are written.
         """
 
         filename = "dustopac.inp"
-        if directory is None:
-            raise ValueError("directory for RT calculation should be specified.")
         path = os.path.join(directory, filename)
 
         print(f"INFO: Writing {path}.....", end="")
@@ -390,8 +373,8 @@ class Model:
     def _write_dustkapscatmat_inp(
         self, 
         *, 
-        directory:str|None=None,
-        opacity=None,
+        directory:str,
+        opacity,
         smoothing:bool=False,
         config:dict,
         ):
@@ -401,19 +384,15 @@ class Model:
 
         Parameters
         ----------
-        directory : str, required, default: None
+        directory : str
             Data directory in which the files are written.
-        opacity : str or instance of `dharp_opac.diel_const`, required, default: None
+        opacity : str or instance of `dharp_opac.diel_const`
             Opacity model to be used. Either 'birnstiel2018' or 'ricci2010' or instance of do.diel_const.
             Could be read from a .lnk file using do.diel_from_lnk_file class, inherited from do.diel_const.
         smoothing : bool, optional, default: False
             Smooth the opacities by averaging over multiple particle sizes.
             This slows down the computation.
         """
-
-        if directory is None:
-            raise ValueError("directory for RT calculation should be specified.")
-
         #TODO: be more flexible?
         Nangle = 181
         # Set up a wavelength grid (in micron) upon which we want to compute the opacities
@@ -541,13 +520,13 @@ class Model:
             print("done.")
         print()
 
-    def _write_numberdens_inp(self, *, directory:str|None=None, config:dict):
+    def _write_numberdens_inp(self, *, directory:str, config:dict):
         """
         Function writes the 'numberdens_*.inp' input file.
 
         Parameters
         ----------
-        directory : str, required, default: None
+        directory : str
             Data directory in which the files are written.
         """
         config_gas = config["gas"]
@@ -556,8 +535,6 @@ class Model:
         if abundance["mode"] not in ("constant", "array"):
             raise ValueError(f"abundance.mode = {abundance["mode"]}. Should be 'constant' or 'array' from npz file.")
         filename = f"numberdens_{species}.binp"
-        if directory is None:
-            raise ValueError("directory for RT calculation should be specified.")
         path = os.path.join(directory, filename)
 
         MUSTAR = config["stars"]["mu_star"]
@@ -577,18 +554,16 @@ class Model:
             #     f.write(f"{ngrho.value:.6e}\n".encode("utf-8"))
         print("done.")
 
-    def _write_gas_velocity_inp(self, *, directory:str|None=None):
+    def _write_gas_velocity_inp(self, *, directory:str):
         """
         Function writes the 'gas_velocity.inp' input file.
 
         Parameters
         ----------
-        directory : str, required, default: None
+        directory : str
             Data directory in which the files are written.
         """
         filename = "gas_velocity.binp"
-        if directory is None:
-            raise ValueError("directory for RT calculation should be specified.")
         if len(set({self.gas.v1.unit, self.gas.v2.unit, self.gas.v3.unit}))!=1 and self.gas.v1.unit!=u.cm/u.s:
             raise ValueError(f"gas velocity fields unit should be cm/s, not {self.gas.v1.unit}.")
         path = os.path.join(directory, filename)
@@ -606,20 +581,18 @@ class Model:
             #     )
         print("done.")
 
-    def _write_amr_grid_inp(self, *, directory:str|None=None):
+    def _write_amr_grid_inp(self, *, directory:str):
         """
         Adapted from dustpylib (https://dustpylib.readthedocs.io/en/latest/radmc3d.html) method 
         Function writes the 'amr_grid.inp' input file.
 
         Parameters
         ----------
-        directory : str, required, default: None
+        directory : str
             Data directory in which the files are written.
         """
 
         filename = "amr_grid.inp"
-        if directory is None:
-            raise ValueError("directory for RT calculation should be specified.")
         if self.geometry!="spherical":
             raise NotImplementedError(f"Model geometry={self.geometry} should be 'spherical'.")
         if self.grid.x1.unit!=u.cm:
@@ -649,19 +622,17 @@ class Model:
                 f.write(f"{x3.value:.12e}\n")
         print("done.")
 
-    def _write_dust_density_inp(self, *, directory:str|None=None):
+    def _write_dust_density_inp(self, *, directory:str):
         """
         Adapted from dustpylib (https://dustpylib.readthedocs.io/en/latest/radmc3d.html) method 
         Function writes the 'dust_density.inp' input file.
 
         Parameters
         ----------
-        directory : str, required, default: None
+        directory : str
             Data directory in which the files are written. 
         """
         filename = "dust_density.binp"
-        if directory is None:
-            raise ValueError("directory for RT calculation should be specified.")
         if self.dust.rho.unit!=u.g/u.cm**3:
             raise ValueError(f"dust rho field unit should be g/cm^3, not {self.dust.rho.unit}.")
         path = os.path.join(directory, filename)
