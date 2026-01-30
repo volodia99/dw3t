@@ -14,6 +14,7 @@ import dsharp_opac as do
 from nonos.api import GasDataSet
 from nonos._geometry import axes_from_geometry, Geometry
 from dw3t._typing import FArray1D, FArrayND
+from dw3t._parsing import is_set
 
 def computeSizeMM(betai:FArray1D, *, rhoint:float, unit_length_au:float, unit_mass_msun:float) -> u.Quantity:
     sizeMM_k = betai/(np.sqrt(np.pi/8.0)*rhoint.to(u.g/u.cm/u.cm/u.cm)*(unit_length_au.to(u.cm))**2/unit_mass_msun.to(u.g))
@@ -66,13 +67,13 @@ class Opacity:
     def __post_init__(self):
         if self.mix.endswith(".lnk"):
             self.mix = do.diel_from_lnk_file(self.mix)
-            if self.rho=="unset":
+            if not is_set(self.rho):
                 raise ValueError(
                     f"Internal density of the mix has to be defined. Please provide 'rho' in dust.opacity."
                 )
             self.mix.rho = self.rho
         else:
-            if self.rho!="unset":
+            if is_set(self.rho):
                 print("WARNING: unused 'rho' when using dsharp_opac mix.")
 
 @dataclass(kw_only=True, slots=True)
@@ -155,10 +156,10 @@ class Model:
                     smoothing=smoothing,
                     config=config,
                 )
+            self._write_metadata(directory=directory)
         if "gas" in self.component:
             self._write_numberdens_inp(directory=directory, config=config)
             self._write_gas_velocity_inp(directory=directory)
-        self._write_metadata(directory=directory)
 
     def _write_radmc3d_inp(self, *, directory:str|None=None, config:dict):
         """
@@ -203,7 +204,6 @@ class Model:
         lam_grid = np.linspace(config_wavelength_micron["min"],config_wavelength_micron["max"],config_wavelength_micron["N"])*u.micron
         lam_grid = lam_grid.value
         R_star = (config["stars"]["R_star"]*u.R_sun).to(u.cm).value
-        #TODO: use unit_mass_msun instead?
         M_star = (config["stars"]["M_star"]*u.M_sun).to(u.g).value
         T_star = (config["stars"]["T_star"]*u.K).value
 
@@ -305,7 +305,7 @@ class Model:
     def _write_metadata(self, *, directory:str|None=None):
         """
         Adapted from dustpylib (https://dustpylib.readthedocs.io/en/latest/radmc3d.html) method 
-        Function writes the 'metadata*.npz' file.
+        Function writes the 'metadata.npz' file.
         It is not required for ``RADMC-3D`` model, but it contains
         additional data such as particle size bins used in the setup.
 
@@ -315,7 +315,7 @@ class Model:
             Data directory in which the files are written.
         """
 
-        filename = "metadata.npz"
+        filename = "metadata.dw3t.npz"
         if directory is None:
             raise ValueError("directory for RT calculation should be specified.")
         path = os.path.join(directory, filename)

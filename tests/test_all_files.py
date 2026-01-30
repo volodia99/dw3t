@@ -22,7 +22,7 @@ class TestFileWrite:
         assert filecmp.cmp(data_dir_ref / "dustopac.inp", data_dir / "dustopac.inp", shallow=False)
         assert filecmp.cmp(data_dir_ref / "gas_velocity.binp", data_dir / "gas_velocity.binp", shallow=False)
         assert filecmp.cmp(data_dir_ref / "lines.inp", data_dir / "lines.inp", shallow=False)
-        assert filecmp.cmp(data_dir_ref / "metadata.npz", data_dir / "metadata.npz", shallow=False)
+        assert filecmp.cmp(data_dir_ref / "metadata.dw3t.npz", data_dir / "metadata.dw3t.npz", shallow=False)
         assert filecmp.cmp(data_dir_ref / "molecule_co.inp", data_dir / "molecule_co.inp", shallow=False)
         assert filecmp.cmp(data_dir_ref / "numberdens_co.binp", data_dir / "numberdens_co.binp", shallow=False)
         assert filecmp.cmp(data_dir_ref / "radmc3d.inp", data_dir / "radmc3d.inp", shallow=False)

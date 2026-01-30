@@ -1,18 +1,24 @@
 [simulation]
+output_dir = "tests/data/idefix_1_dust_fluid/radmc3d_ref"
+simulation_files_only = false
+processing = [
+    { mode = "identity" },
+    { mode = "phi_expansion", nphi = 128 },
+]
 on = 0
 input_dir = "tests/data/idefix_1_dust_fluid"
 unit_length_au = 93.0
 unit_mass_msun = 1.2
-processing = "template:phi_expansion"
-component = "dustgas"
+component = [
+    "dust",
+    "gas",
+]
 internal_rho = 2.0
-output_dir = "tests/data/idefix_1_dust_fluid/radmc3d_ref"
-simulation_files_only = false
 
-[opacity]
-mix = "birnstiel2018"
-rho = 1.26
+[dust.opacity]
+rho = "unset"
 smoothing = false
+mix = "birnstiel2018"
 
 [radmc3d]
 modified_random_walk = 1
@@ -25,15 +31,18 @@ nphot_scat = 10
 
 [stars]
 M_star = 1.2
+mu_star = 1.37
 R_star = 2.0
 T_star = 7000.0
-mu_star = 1.37
 
 [wavelength_micron]
-lambda_min = 1
-lambda_max = 10000
-Nlam = 200
+min = 1
+max = 10000
+N = 200
 
 [gas]
-molecule_name = "co"
-molecule_abundance = 0.0001
+species = "co"
+
+[gas.abundance]
+mode = "constant"
+value = 0.0001

@@ -5,8 +5,6 @@ unit_length_au          = 93.0                                                  
 unit_mass_msun          = 1.2                                                                     #necessary
 component               = ["dust", "gas"]                                                                 #necessary/to_be_improved_with_section?
 internal_rho            = 2.0                                                                     #to_be_improved?
-output_dir              = "tests/data/idefix_1_dust_fluid/radmc3d"                                 #optional
-simulation_files_only   = false                                                                   #optional
 processing              = [                                                                     #optional/to_be_improved?
     {mode = "identity"},
     {mode = "phi_expansion", nphi = 128},
@@ -15,8 +13,6 @@ processing              = [                                                     
 
 [dust.opacity]
 mix                     = "birnstiel2018"                                                           #necessary
-rho                     = "unset"                                                                    #optional/None/to_be_improved?
-smoothing               = false                                                                   #optional/to_be_tested
 
 [radmc3d]                                                                                       #optional
 modified_random_walk    = 1
@@ -28,19 +24,12 @@ nphot                   = 10
 nphot_scat              = 10
 
 [stars]
-M_star                  = 1.2                                                                     #to_be_improved/optional/unit_mass_msun?
 R_star                  = 2.0                                                                     #necessary_if_star
 T_star                  = 7000.0                                                                  #necessary_if_star
-mu_star                 = 1.37                                                                    #optional
-
-[wavelength_micron]
-min                     = 1                                                                                 #optional
-max                     = 10_000                                                                            #optional
-N                       = 200                                                                               #optional
 
 [gas]                                                                                                       #necessary_if_gas
 species                 = "co"                                                                              
-
-[gas.abundance]
-mode                    = "constant"
-value                   = 1e-4                                                                           
+abundance               = {
+    mode  = "constant",
+    value = 1e-4,
+}
