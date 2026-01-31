@@ -45,9 +45,9 @@ def main(argv: list[str] | None = None) -> int:
             f"expecting {expected_length_mandatory} mandatory parameters, not {len(MANDATORY_SET)}."
         )
     if "gas" in config_file_layer["simulation"]["component"]:
-        MANDATORY_SET.update("species", "abundance")
+        MANDATORY_SET.update(["species", "abundance"])
     if "dust" in config_file_layer["simulation"]["component"]:
-        MANDATORY_SET.update("opacity", "internal_rho")
+        MANDATORY_SET.update(["opacity", "internal_rho"])
     # ensures that all mandatory parameters are defined in toml file
     if MANDATORY_SET.difference(set(list_of_middle_keys(config_file_layer))):
         raise ValueError(
