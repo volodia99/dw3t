@@ -134,12 +134,11 @@ class Model:
         if directory is None:
             raise ValueError("directory for RT calculation should be specified.")
 
-        print(f"WARNING: for now writing only the input files related to simulated outputs, "\
-        "refer to the RADMC3D documentation to write the mandatory files related to RADMC3D.")
-
         Path(directory).mkdir(parents=True, exist_ok=False)
-        if not simulation_files_only:
-            print(f"WARNING: Entering mode with all RADMC3D necessary files")
+        if simulation_files_only:
+            print(f"WARNING: for now writing only the input files related to simulated outputs, "\
+            "refer to the RADMC3D documentation to write the mandatory files related to RADMC3D.")
+        elif not simulation_files_only:
             self._write_radmc3d_inp(directory=directory, config=config["radmc3d"])
             self._write_stars_inp(directory=directory, config=config)
             self._write_wavelength_micron_inp(directory=directory, config=config["wavelength_micron"])
@@ -679,7 +678,7 @@ def load_model(
     ds:GasDataSet,
     unit_length_au:float,
     unit_mass_msun:float,
-    component:str,
+    component:list,
     config:dict,
 ) -> "Model":
     if ds.native_geometry!="spherical":
@@ -718,7 +717,6 @@ def load_model(
         print(f"WARNING: 'dust' not implemented in a general way with nonos. Implementation specific to IDEFIX.")
         directory = ds._parameters_input["directory"]
         rhoint_csg = config["simulation"]["internal_rho"]*(u.g/u.cm/u.cm/u.cm)
-        print(f"WARNING: RHOINT={rhoint_csg}, fixed for now.")
         inifile = inifix.load(os.path.join(directory, "idefix.ini"))
         dragType = inifile["Dust"]["drag"][0]
         if dragType!="size":
