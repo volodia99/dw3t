@@ -11,14 +11,9 @@ import astropy.constants as uc
 import inifix
 import dsharp_opac as do
 
-from nonos.api import GasDataSet
 from nonos._geometry import axes_from_geometry, Geometry
 from dw3t._typing import FArray1D, FArrayND
 from dw3t._parsing import is_set
-
-def computeSizeMM(betai:FArray1D, *, rhoint:float, unit_length_au:float, unit_mass_msun:float) -> u.Quantity:
-    sizeMM_k = betai/(np.sqrt(np.pi/8.0)*rhoint.to(u.g/u.cm/u.cm/u.cm)*(unit_length_au.to(u.cm))**2/unit_mass_msun.to(u.g))
-    return sizeMM_k.to(u.mm)
 
 @dataclass(kw_only=True, slots=True, frozen=True)
 class Grid:
@@ -78,7 +73,7 @@ class Opacity:
 
 @dataclass(kw_only=True, slots=True)
 class Model:
-    grid:Grid
+    grid:Grid|None=None
     dust:Dust|None=None
     gas:Gas|None=None
     unit_length_au:float
@@ -131,12 +126,11 @@ class Model:
         directory : str
             Data directory in which the files are written.
         """
-        print(f"WARNING: for now writing only the input files related to simulated outputs, "\
-        "refer to the RADMC3D documentation to write the mandatory files related to RADMC3D.")
-
         Path(directory).mkdir(parents=True, exist_ok=False)
-        if not simulation_files_only:
-            print(f"WARNING: Entering mode with all RADMC3D necessary files")
+        if simulation_files_only:
+            print(f"WARNING: for now writing only the input files related to simulated outputs, "\
+            "refer to the RADMC3D documentation to write the mandatory files related to RADMC3D.")
+        elif not simulation_files_only:
             self._write_radmc3d_inp(directory=directory, config=config["radmc3d"])
             self._write_stars_inp(directory=directory, config=config)
             self._write_wavelength_micron_inp(directory=directory, config=config["wavelength_micron"])
@@ -647,67 +641,22 @@ class Model:
         print("done.")
 
 def load_model(
-    ds:GasDataSet,
     unit_length_au:float,
     unit_mass_msun:float,
-    component:str,
+    component:list,
     config:dict,
 ) -> "Model":
-    if ds.native_geometry!="spherical":
-        raise NotImplementedError(f"native_geometry='{ds.native_geometry}' should be 'spherical'")
-
-    unit_length_au = unit_length_au * u.au
-    unit_mass_msun = unit_mass_msun * u.M_sun
-    UNIT_DENSITY = unit_mass_msun / unit_length_au**3
-    UNIT_VELOCITY = np.sqrt(uc.G*unit_mass_msun/unit_length_au).to(u.m/u.s)
-
-    model = Model(
-        grid=Grid(
-            x1 = ((ds.coords.get_axis_array("r") * unit_length_au).to(u.cm)),#.value,
-            x2 = ds.coords.get_axis_array("theta") * u.radian,
-            x3 = ds.coords.get_axis_array("phi") * u.radian,
-        ),
-        unit_length_au=unit_length_au,
-        unit_mass_msun=unit_mass_msun,
-        component=component,
-        geometry=Geometry(ds.native_geometry)
-    )
     if not (set(component) & set(["gas","dust"])):
         raise ValueError(
             f"{component=} should be 'gas', 'dust' or ['dust', 'gas']."
         )
-    if "gas" in component:
-        #TODO: add flexibility
-        print(f"WARNING: Assuming no omegraframe.")
-        model.gas = Gas(
-            rho = ((ds["RHO"].data * UNIT_DENSITY).to(u.g / u.cm**3)),#.value,
-            v1 = ((ds["VX1"].data * UNIT_VELOCITY).to(u.cm / u.s)),#.value,
-            v2 = ((ds["VX2"].data * UNIT_VELOCITY).to(u.cm / u.s)),#.value,
-            v3 = ((ds["VX3"].data * UNIT_VELOCITY).to(u.cm / u.s)),#.value,
-        )
-    if "dust" in component:
-        print(f"WARNING: 'dust' not implemented in a general way with nonos. Implementation specific to IDEFIX.")
-        directory = ds._parameters_input["directory"]
-        rhoint_csg = config["simulation"]["internal_rho"]*(u.g/u.cm/u.cm/u.cm)
-        print(f"WARNING: RHOINT={rhoint_csg}, fixed for now.")
-        inifile = inifix.load(os.path.join(directory, "idefix.ini"))
-        dragType = inifile["Dust"]["drag"][0]
-        if dragType!="size":
-            raise ValueError(f"{dragType=} should be 'size'.")
-        dustBeta = np.array(inifile["Dust"]["drag"][1:])
-        dustSize = computeSizeMM(
-            dustBeta, 
-            rhoint=rhoint_csg,
-            unit_length_au=unit_length_au,
-            unit_mass_msun=unit_mass_msun,
-            )#.value
-        dustSize_ascending_indices = np.argsort(dustSize)
-        dustrho = np.empty(model.grid.shape+(len(dustSize),))
-        for kk in dustSize_ascending_indices:
-            dustrho[..., kk] = ds[f"DUST{kk}_RHO"].data
-        model.dust = Dust(
-            rho = ((dustrho * UNIT_DENSITY).to(u.g / u.cm**3)),#.value,
-            size = dustSize,
-        )
+    unit_length_au = unit_length_au * u.au
+    unit_mass_msun = unit_mass_msun * u.M_sun
 
+    model = Model(
+        unit_length_au=unit_length_au,
+        unit_mass_msun=unit_mass_msun,
+        component=component,
+        geometry=Geometry("spherical")
+    )
     return model

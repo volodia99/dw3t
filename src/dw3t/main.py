@@ -39,15 +39,15 @@ def main(argv: list[str] | None = None) -> int:
 
     #TODO: improve handling of mandatory parameters
     # ensures that we do not add mandatory parameters without knowing it
-    expected_length_mandatory = 7
+    expected_length_mandatory = 5
     if len(MANDATORY_SET)!=expected_length_mandatory:
         raise ValueError(
             f"expecting {expected_length_mandatory} mandatory parameters, not {len(MANDATORY_SET)}."
         )
     if "gas" in config_file_layer["simulation"]["component"]:
-        MANDATORY_SET.update(list(config_file_layer["gas"].keys()))
+        MANDATORY_SET.update(["species", "abundance"])
     if "dust" in config_file_layer["simulation"]["component"]:
-        MANDATORY_SET.update(list(config_file_layer["dust"].keys()))
+        MANDATORY_SET.update(["opacity"])
     # ensures that all mandatory parameters are defined in toml file
     if MANDATORY_SET.difference(set(list_of_middle_keys(config_file_layer))):
         raise ValueError(
@@ -55,14 +55,9 @@ def main(argv: list[str] | None = None) -> int:
         )
 
     config = DeepChainMap(config_file_layer, DEFAULT_LAYER)
-    if not is_set(config["simulation"]["output_dir"]):
-        config["simulation"]["output_dir"] = os.path.join(config["simulation"]["input_dir"], "radmc3d")
+    #TODO: change - ok if nonos processing, mandatory otherwise?
     if not is_set(config["stars"]["M_star"]):
         config["stars"]["M_star"] = config["simulation"]["unit_mass_msun"]
-
-    file = config["simulation"]["on"]
-    input_dir = config["simulation"]["input_dir"]
-    ds = GasDataSet(file, directory=input_dir)
 
     component = config["simulation"]["component"]
     component = np.atleast_1d(component).tolist()
@@ -72,7 +67,6 @@ def main(argv: list[str] | None = None) -> int:
         )
 
     model = load_model(
-        ds=ds,
         unit_length_au=config["simulation"]["unit_length_au"],
         unit_mass_msun=config["simulation"]["unit_mass_msun"],
         component=component,
@@ -84,8 +78,8 @@ def main(argv: list[str] | None = None) -> int:
         processing_category = [d.get("mode") for d in processing_dict]
         if "userdef" in processing_category:
             if len(processing_category)!=1:
-                raise ValueError(
-                    "mode='userdef' cannot be combined with other processing modes."
+                raise NotImplementedError(
+                    "mode='userdef' cannot yet be combined with other processing modes."
                 )
             processing_file = processing_dict[0].get("file")
             if not processing_file.endswith(".py"):
@@ -100,6 +94,12 @@ def main(argv: list[str] | None = None) -> int:
             kwargs = [processing_dict[0].copy()]
             del kwargs[0]["mode"]
         else: 
+            if "nonos" in processing_category:
+                if not is_set(config["simulation"]["output_dir"]):
+                    config["simulation"]["output_dir"] = os.path.join(
+                        processing_dict[processing_category.index("nonos")]["input_dir"], 
+                        "radmc3d"
+                    )
             template_modules = []
             kwargs = []
             for ii in range(len(processing_category)):
@@ -113,6 +113,14 @@ def main(argv: list[str] | None = None) -> int:
                     )
         for tm, kw in zip(template_modules, kwargs):
             model = tm.processing(model=model, kwargs=kw)
+
+    if not is_set(config["simulation"]["output_dir"]):
+        MANDATORY_SET.update(["output_dir"])
+
+    if MANDATORY_SET.difference(set(list_of_middle_keys(config_file_layer))):
+        raise ValueError(
+            f"at least one mandatory parameter is missing: {MANDATORY_SET.difference(set(list_of_middle_keys(config_file_layer)))}"
+        )
 
     if model.dimension!=3:
         raise ValueError(f"{model.dimension=}D, should be 3D for RADMC3D. Try to post-process the data for it to be 3D.")

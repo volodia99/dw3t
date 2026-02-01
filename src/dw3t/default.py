@@ -25,8 +25,6 @@ DEFAULT_LAYER = {
 }
 
 MANDATORY_SET = {
-    "on",
-    "input_dir",
     "unit_length_au",
     "unit_mass_msun",
     "component",
