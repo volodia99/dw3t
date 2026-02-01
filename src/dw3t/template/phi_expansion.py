@@ -16,32 +16,30 @@ def processing(*, model:"Model", kwargs:dict) -> "Model":
     nphi = kwargs["nphi"]
     phi = np.linspace(0, 2.*np.pi, nphi+1) * u.radian
 
+    grid=Grid(
+        x1 = model.grid.x1,
+        x2 = model.grid.x2,
+        x3 = phi,
+    )
+
     gas = None
     dust = None
-    if model.gas is not None:
+    if "gas" in model.component:
         gas = Gas(
             rho = np.repeat(model.gas.rho, nphi, axis=2),
             v1 = np.repeat(model.gas.v1, nphi, axis=2),
             v2 = np.repeat(model.gas.v2, nphi, axis=2),
             v3 = np.repeat(model.gas.v3, nphi, axis=2),
         )
-    if model.dust is not None:
+    if "dust" in model.component:
         dust = Dust(
             rho = np.repeat(model.dust.rho, nphi, axis=2),
             size = model.dust.size,
         )
 
-    model = Model(
-        grid=Grid(
-            x1 = model.grid.x1,
-            x2 = model.grid.x2,
-            x3 = phi,
-        ),
-        gas=gas,
-        dust=dust,
-        unit_length_au=model.unit_length_au,
-        unit_mass_msun=model.unit_mass_msun,
-        component=model.component,
-        geometry=model.geometry,
-    )
-    return model
+    updated_model = model
+    updated_model.grid = grid
+    updated_model.gas = gas
+    updated_model.dust = dust
+    
+    return updated_model
