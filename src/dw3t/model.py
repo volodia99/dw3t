@@ -114,7 +114,7 @@ class Model:
     def write_files(
         self, 
         *, 
-        directory:str
+        directory:str,
         write_opacities:bool=False,
         opacity=None,
         smoothing:bool=False,
@@ -709,4 +709,5 @@ def load_model(
             rho = ((dustrho * UNIT_DENSITY).to(u.g / u.cm**3)),#.value,
             size = dustSize,
         )
+
     return model
