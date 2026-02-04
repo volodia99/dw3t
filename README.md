@@ -171,13 +171,3 @@ min = 1
 max = 10_000
 N = 200
 ```
-
-***Mandatory parameters:***
-- `from` : directory of the initialized ProDiMo model from which to extract ProDiMo.out and *.in files (`str`)
-- `to` : directory of the ProDiMo model on which the simulation grid and fields are interpolated (`str`)
-
-***Optional parameters:***
-- `plot` : creates 3 .pdf files in the ProDiMo model directory (given by the `to` parameter), with plots of the fields (`bool`).
-    - `simulation.pdf`: from the simulation output file, with some post-processing (e.g., removing for all the fields the region inside the cylindrical radius corresponding to the inner edge).
-    - `prodimo.pdf`: from the ProDiMo model, ready to be run with ProDiMo.
-    - `compare_simulation_prodimo.pdf`: look at the 1D density in the midplane and vertically at R=`unit_length_au`. 
