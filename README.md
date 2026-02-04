@@ -101,8 +101,8 @@ See the corresponding papers for more info.
 Including the opacity constants. In that case you need to provide the internal density (`rho` \[g/cm3\]) of the mix.
 ```toml
 [dust.opacity]
-mix = "path_to_lnk_file",
-rho = 2.0,
+mix = "path_to_lnk_file"
+rho = 2.0
 ```
 
 ### 3. Section `[gas]`
