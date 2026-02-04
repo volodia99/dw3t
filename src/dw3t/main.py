@@ -55,7 +55,6 @@ def main(argv: list[str] | None = None) -> int:
         )
 
     config = DeepChainMap(config_file_layer, DEFAULT_LAYER)
-    #TODO: change - ok if nonos processing, mandatory otherwise?
     if not is_set(config["stars"]["M_star"]):
         config["stars"]["M_star"] = config["simulation"]["unit_mass_msun"]
 
