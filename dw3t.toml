@@ -2,7 +2,6 @@
 unit_length_au          = 93.0                                                                    #necessary
 unit_mass_msun          = 1.2                                                                     #necessary
 component               = ["dust", "gas"]                                                                 #necessary/to_be_improved_with_section?
-internal_rho            = 2.0                                                                     #to_be_improved?
 output_dir              = "example/radmc3d_test"                                 #optional
 # simulation_files_only   = false                                                                   #optional
 processing              = [                                                                     #optional/to_be_improved?

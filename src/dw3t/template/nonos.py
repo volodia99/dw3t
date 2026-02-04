@@ -6,6 +6,7 @@ import astropy.constants as uc
 
 import inifix
 from nonos.api import GasDataSet
+from dw3t._typing import FArray1D
 from dw3t.model import Model, Grid, Gas, Dust
 
 def computeSizeMM(betai:FArray1D, *, rhoint:float, unit_length_au:float, unit_mass_msun:float) -> u.Quantity:
