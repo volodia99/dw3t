@@ -55,14 +55,14 @@ You can find an example for the parameter file in `dw3t/dw3t.toml`.
 ***Example:*** 
 ```toml
 processing = [
-    {mode="nonos", on=0, input_dir="tests/data/idefix_1_dust_fluid", internal_rho=2.0},
+    {mode="builtin", on=0, input_dir="tests/data/idefix_1_dust_fluid", internal_rho=2.0},
     {mode="phi_expansion", nphi=128},
 ]
 ```
 
 Each element of the list has the form `{mode="choose_our_mode", **kwargs}`. For now, implemented modes are:
 - "identity": returns a copy of the model (mainly for testing purposes)
-- "nonos": use [nonos](https://github.com/la-niche/nonos) to read the grid and the fields necessary to compute a radmc3d model (tested only with idefix simulations for now). This mode comes necessary with `on` (`int`) and `input_dir` (`str`), which are respectively the simulation output number and the directory of the simulated output. Moreover, for idefix simulations you need to add the `internal_rho` (`float`) parameter (\[g/cm3\]) if `"dust"` in included in `component`.
+- "builtin": use [nonos](https://github.com/la-niche/nonos) to read the grid and the fields necessary to compute a radmc3d model (tested only with idefix simulations for now). This mode comes necessary with `on` (`int`) and `input_dir` (`str`), which are respectively the simulation output number and the directory of the simulated output. Moreover, for idefix simulations you need to add the `internal_rho` (`float`) parameter (\[g/cm3\]) if `"dust"` in included in `component`.
 - "phi_expansion": extend azimuthally a 2D spherical ($r$, $\theta$) simulation, using `nphi` cells in the $\phi$ direction, and returns a 3D spherical model.
 
 See in `src/dw3t/template` for more info.
