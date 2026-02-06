@@ -1,3 +1,9 @@
+- clm: "builtin" instead of "nonos" mode
+- clm: "on" -> "output_number"
+- clm : git submodule avec les données de test dedans + zip
+- clm : optools ? astroquery ? instead of dsharp_opac
+- clm : workspace (1 repo, 2 distributions), pour interface radmc3d/prodimo OU meme package (pre-commit, idefix-cli)
+
 # dw3t
 [![PyPI](https://img.shields.io/pypi/v/dw3t.svg?logo=pypi&logoColor=white&label=PyPI)](https://pypi.org/project/dw3t/)
 [![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
