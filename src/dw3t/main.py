@@ -2,11 +2,11 @@ import os
 import argparse
 import json
 import importlib
+import sys
 from pathlib import Path
 
 import numpy as np
 
-import tomli
 import tomli_w
 from deep_chainmap import DeepChainMap
 from nonos.api import GasDataSet
@@ -15,6 +15,11 @@ from dw3t.model import load_model, Opacity
 from dw3t._typing import F, FArray2D
 from dw3t._parsing import is_set, list_of_middle_keys
 from dw3t.default import DEFAULT_LAYER, MANDATORY_SET
+
+if sys.hexversion >= 0x30f00a6:
+    import tomllib
+else:
+    import tomli as tomllib
 
 def get_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
@@ -35,7 +40,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = get_parser()
     args = parser.parse_args(argv)
     with open(args.parameter_file, "rb") as f:
-        config_file_layer = tomli.load(f)
+        config_file_layer = tomllib.load(f)
 
     #TODO: improve handling of mandatory parameters
     # ensures that we do not add mandatory parameters without knowing it
