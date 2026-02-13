@@ -14,7 +14,7 @@
 
 ## Installation
 
-We recommend to install `dw3t` using the package and project manager `uv`. See the [documentation](https://docs.astral.sh/uv/getting-started/installation/#standalone-installer) to install `uv` on your system. After creating an environment (`uv venv`), run the following:
+We recommend to install `dw3t` using the package and project manager `uv`. See the [documentation](https://docs.astral.sh/uv/getting-started/installation/#standalone-installer) to install `uv` on your system. Run the following:
 
 ```shell
 uv tool install dw3t
