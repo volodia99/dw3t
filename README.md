@@ -1,7 +1,3 @@
-- clm : git submodule avec les données de test dedans + zip
-- clm : optools ? astroquery ? instead of dsharp_opac
-- clm : workspace (1 repo, 2 distributions), pour interface radmc3d/prodimo OU meme package (pre-commit, idefix-cli)
-
 # dw3t
 [![PyPI](https://img.shields.io/pypi/v/dw3t.svg?logo=pypi&logoColor=white&label=PyPI)](https://pypi.org/project/dw3t/)
 [![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
@@ -11,6 +7,11 @@
 ## Development status
 
 *Word of caution*: `dw3t` has still to be tested, in particular to be sure that everything works smoothly in a radmc3d computation. The documentation is work in progress.
+
+***TODO***
+- git submodule avec les données de test dedans + zip
+- check optools ? astroquery ? instead of dsharp_opac
+- workspace (1 repo, 2 distributions), pour interface radmc3d/prodimo OU meme package (pre-commit, idefix-cli)
 
 ## Installation
 
