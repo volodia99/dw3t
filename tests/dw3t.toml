@@ -1,10 +1,11 @@
 [simulation]
+output_dir              = "tests/idefix_1_dust_fluid/radmc3d"
 unit_length_au          = 93.0                                                                    #necessary
 unit_mass_msun          = 1.2                                                                     #necessary
 component               = ["dust", "gas"]                                                                 #necessary/to_be_improved_with_section?
 processing              = [                                                                     #optional/to_be_improved?
     # {mode = "identity"},
-    {mode="builtin", input_number=0, input_dir="tests/data/idefix_1_dust_fluid", internal_rho=2.0},
+    {mode="builtin", input_number=1, input_dir="tests/idefix_1_dust_fluid/idefix_ref", internal_rho=2.0},
     {mode = "phi_expansion", nphi = 128},
     # {mode = "mask_inner", inner_edge = 1.5},
 ]
