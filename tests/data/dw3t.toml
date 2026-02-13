@@ -4,7 +4,7 @@ unit_mass_msun          = 1.2                                                   
 component               = ["dust", "gas"]                                                                 #necessary/to_be_improved_with_section?
 processing              = [                                                                     #optional/to_be_improved?
     # {mode = "identity"},
-    {mode="nonos", on=0, input_dir="tests/data/idefix_1_dust_fluid", internal_rho=2.0},
+    {mode="builtin", input_number=0, input_dir="tests/data/idefix_1_dust_fluid", internal_rho=2.0},
     {mode = "phi_expansion", nphi = 128},
     # {mode = "mask_inner", inner_edge = 1.5},
 ]

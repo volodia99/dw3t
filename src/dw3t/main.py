@@ -1,6 +1,5 @@
 import os
 import argparse
-import json
 import importlib
 from pathlib import Path
 
@@ -9,7 +8,6 @@ import numpy as np
 import tomli
 import tomli_w
 from deep_chainmap import DeepChainMap
-from nonos.api import GasDataSet
 
 from dw3t.model import load_model, Opacity
 from dw3t._typing import F, FArray2D
@@ -93,10 +91,10 @@ def main(argv: list[str] | None = None) -> int:
             kwargs = [processing_dict[0].copy()]
             del kwargs[0]["mode"]
         else: 
-            if "nonos" in processing_category:
+            if "builtin" in processing_category:
                 if not is_set(config["simulation"]["output_dir"]):
                     config["simulation"]["output_dir"] = os.path.join(
-                        processing_dict[processing_category.index("nonos")]["input_dir"], 
+                        processing_dict[processing_category.index("builtin")]["input_dir"], 
                         "radmc3d"
                     )
             template_modules = []

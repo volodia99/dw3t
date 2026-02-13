@@ -14,7 +14,7 @@ def computeSizeMM(betai:FArray1D, *, rhoint:float, unit_length_au:float, unit_ma
     return sizeMM_k.to(u.mm)
 
 def processing(*, model:"Model", kwargs:dict) -> "Model":
-    file = kwargs["on"]
+    file = kwargs["input_number"]
     input_dir = kwargs["input_dir"]
     ds = GasDataSet(file, directory=input_dir)
 

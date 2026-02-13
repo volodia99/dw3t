@@ -8,6 +8,11 @@
 
 *Word of caution*: `dw3t` has still to be tested, in particular to be sure that everything works smoothly in a radmc3d computation. The documentation is work in progress.
 
+***TODO***
+- git submodule avec les données de test dedans + zip
+- check optools ? astroquery ? instead of dsharp_opac
+- workspace (1 repo, 2 distributions), pour interface radmc3d/prodimo OU meme package (pre-commit, idefix-cli)
+
 ## Installation
 
 We recommend to install `dw3t` using the package and project manager `uv`. See the [documentation](https://docs.astral.sh/uv/getting-started/installation/#standalone-installer) to install `uv` on your system. After creating an environment (`uv venv`), run the following:
@@ -49,14 +54,14 @@ You can find an example for the parameter file in `dw3t/dw3t.toml`.
 ***Example:*** 
 ```toml
 processing = [
-    {mode="nonos", on=0, input_dir="tests/data/idefix_1_dust_fluid", internal_rho=2.0},
+    {mode="builtin", input_number=0, input_dir="tests/data/idefix_1_dust_fluid", internal_rho=2.0},
     {mode="phi_expansion", nphi=128},
 ]
 ```
 
 Each element of the list has the form `{mode="choose_our_mode", **kwargs}`. For now, implemented modes are:
 - "identity": returns a copy of the model (mainly for testing purposes)
-- "nonos": use [nonos](https://github.com/la-niche/nonos) to read the grid and the fields necessary to compute a radmc3d model (tested only with idefix simulations for now). This mode comes necessary with `on` (`int`) and `input_dir` (`str`), which are respectively the simulation output number and the directory of the simulated output. Moreover, for idefix simulations you need to add the `internal_rho` (`float`) parameter (\[g/cm3\]) if `"dust"` in included in `component`.
+- "builtin": use [nonos](https://github.com/la-niche/nonos) to read the grid and the fields necessary to compute a radmc3d model (tested only with idefix simulations for now). This mode comes necessary with `input_number` (`int`) and `input_dir` (`str`), which are respectively the number and the directory of the simulated output. Moreover, for idefix simulations you need to add the `internal_rho` (`float`) parameter (\[g/cm3\]) if `"dust"` in included in `component`.
 - "phi_expansion": extend azimuthally a 2D spherical ($r$, $\theta$) simulation, using `nphi` cells in the $\phi$ direction, and returns a 3D spherical model.
 
 See in `src/dw3t/template` for more info.
@@ -68,7 +73,7 @@ See in `src/dw3t/template` for more info.
 processing = {
     mode = "userdef",
     file = "src/dw3t/template/userdef.py",
-    on = 0,
+    input_number = 0,
     input_dir = "tests/data/idefix_1_dust_fluid",
     internal_rho = 2.0,
 }

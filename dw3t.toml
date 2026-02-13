@@ -6,7 +6,7 @@ output_dir              = "example/radmc3d_test"                                
 # simulation_files_only   = false                                                                   #optional
 processing              = [                                                                     #optional/to_be_improved?
     # {mode = "identity"},
-    {mode="nonos", on=0, input_dir="tests/data/idefix_1_dust_fluid", internal_rho=2.0},
+    {mode="builtin", input_number=0, input_dir="tests/data/idefix_1_dust_fluid", internal_rho=2.0},
     {mode="phi_expansion", nphi=128},
     # {mode = "mask_inner", inner_edge = 1.5},
 ]
