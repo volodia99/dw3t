@@ -1,7 +1,7 @@
 [project]
 name = "dw3t"
 version = "0.1.0"
-description = "Add your description here"
+description = "Interface between spherical datasets from simulation outputs and radmc3d"
 readme = "README.md"
 authors = [
     { name = "gwf" }
