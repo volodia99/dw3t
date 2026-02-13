@@ -9,7 +9,6 @@
 *Word of caution*: `dw3t` has still to be tested, in particular to be sure that everything works smoothly in a radmc3d computation. The documentation is work in progress.
 
 ***TODO***
-- git submodule add test data + compression
 - check optools ? astroquery ? instead of dsharp_opac
 - workspace (1 repo, 2 distributions), for the interface radmc3d/prodimo or even a package (see pre-commit, idefix-cli)
 
