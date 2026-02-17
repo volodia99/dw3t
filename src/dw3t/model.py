@@ -125,6 +125,9 @@ class Opacity:
                     f"Internal density of the mix has to be defined. Please provide 'rho' in dust.opacity."
                 )
             self.mix.rho = self.rho
+        elif self.mix=="weingartner2001":
+            self.mix = do.diel_WeingartnerDraine2001_astrosil()
+            self.rho = self.mix.rho
         else:
             if is_set(self.rho):
                 print("WARNING: unused 'rho' when using dsharp_opac mix.")
@@ -455,6 +458,7 @@ class Model:
         Nlam = lam_grid.shape[0]
 
         dustsize = self.dust.size.to(u.cm).value
+        # Nspec = 200
         Nspec = dustsize.shape[0]
         mag = int(np.ceil(np.log10(Nspec)))
 
@@ -488,6 +492,7 @@ class Model:
             Na = 4*dustsize.shape[0]
             a_opac = np.geomspace(amin, amax, Na)
         else:
+            # a_opac = np.geomspace(dustsize.min(), dustsize.max(), Nspec)
             a_opac = dustsize
 
         # Computing the opacities
