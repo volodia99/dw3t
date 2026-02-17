@@ -30,6 +30,8 @@ def processing(*, model:"Model", kwargs:dict) -> "Model":
             x3 = ds.coords.get_axis_array("phi") * u.radian,
         )
 
+    gas = None
+    dust = None
     if "gas" in model.component:
         #TODO: add flexibility
         print(f"WARNING: Assuming no omegraframe.")
