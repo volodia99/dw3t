@@ -15,6 +15,36 @@ from nonos._geometry import axes_from_geometry, Geometry
 from dw3t._typing import FArray1D, FArrayND
 from dw3t._parsing import is_set
 
+@dataclass(kw_only=True, slots=True)
+class Abundance:
+    mode:str
+    value:FArrayND|float|None=None
+
+@dataclass(kw_only=True, slots=True)
+class NumberDensity:
+    species:str
+    mode:str
+    value:float|str
+    ngas:FArrayND|None=None
+
+    def reconstruct_spatial_distribution(self, *, directory:str) -> dict[str,FArrayND]:
+        match self.mode, self.value:
+            case "unset", "unset":
+                pmodel = pread.read_prodimo(directory)
+                distribution = pmodel.nmol[:,:,pmodel.spnames[self.species]]
+                return {"x1":pmodel.x, "x2":pmodel.z, "distribution":distribution}
+            case "array", "unset":
+                pmodel = pread.read_prodimo(directory)
+                abundance = pmodel.getAbun(self.species)
+                distribution = abundance*self.ngas
+                return {"x1":pmodel.x, "x2":pmodel.z, "distribution":distribution}
+            case "constant", float:
+                abundance = self.value
+                distribution = abundance*self.ngas
+                return {"x1":pmodel.x, "x2":pmodel.z, "distribution":distribution}
+
+                
+
 @dataclass(kw_only=True, slots=True, frozen=True)
 class Grid:
     x1: FArray1D[u.Quantity]
@@ -113,6 +143,7 @@ class Model:
         write_opacities:bool=False,
         opacity=None,
         smoothing:bool=False,
+        abundance=None,
         simulation_files_only:bool=False,
         binary:bool=False,
         config:dict,
@@ -149,7 +180,11 @@ class Model:
                 )
             self._write_metadata(directory=directory)
         if "gas" in self.component:
-            self._write_numberdens_inp(directory=directory, config=config)
+            self._write_numberdens_inp(
+                directory=directory, 
+                abundance=abundance, 
+                config=config
+            )
             self._write_gas_velocity_inp(directory=directory)
 
     def _write_radmc3d_inp(self, *, directory:str, config:dict):
@@ -514,7 +549,7 @@ class Model:
             print("done.")
         print()
 
-    def _write_numberdens_inp(self, *, directory:str, config:dict):
+    def _write_numberdens_inp(self, *, directory:str, abundance:Abundance, config:dict):
         """
         Function writes the 'numberdens_*.inp' input file.
 
@@ -525,9 +560,13 @@ class Model:
         """
         config_gas = config["gas"]
         species = config_gas["species"]
-        abundance = config_gas["abundance"]
-        if abundance["mode"] not in ("constant", "array"):
-            raise ValueError(f"abundance.mode = {abundance["mode"]}. Should be 'constant' or 'array' from npz file.")
+        number_density = config_gas["number_density"]
+        number_density_array = NumberDensity(
+            abundance=abundance,
+            processing=number_density["processing"],
+        )
+        
+
         filename = f"numberdens_{species}.binp"
         path = os.path.join(directory, filename)
 

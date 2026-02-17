@@ -48,7 +48,7 @@ def main(argv: list[str] | None = None) -> int:
             f"expecting {expected_length_mandatory} mandatory parameters, not {len(MANDATORY_SET)}."
         )
     if "gas" in config_file_layer["simulation"]["component"]:
-        MANDATORY_SET.update(["species", "abundance"])
+        MANDATORY_SET.update(["species", "number_density"])
     if "dust" in config_file_layer["simulation"]["component"]:
         MANDATORY_SET.update(["opacity"])
     # ensures that all mandatory parameters are defined in toml file
@@ -86,7 +86,7 @@ def main(argv: list[str] | None = None) -> int:
             processing_file = processing_dict[0].get("file")
             if not processing_file.endswith(".py"):
                 raise ValueError(
-                    f"{proceprocessing_file=} should be a .py file. See example in dw3t/src/dw3t/template/userdef.py."
+                    f"{proceprocessing_file=} should be a .py file. See example in dw3t/src/dw3t/template/model/userdef.py."
                 )
             if not(os.path.isfile(processing_file)):
                 raise FileNotFoundError(f"absolute path of the file '{processing_file}' must exist.")
@@ -106,12 +106,12 @@ def main(argv: list[str] | None = None) -> int:
             kwargs = []
             for ii in range(len(processing_category)):
                 try:
-                    template_modules.append(importlib.import_module(f"dw3t.template.{processing_category[ii]}", package=None))
+                    template_modules.append(importlib.import_module(f"dw3t.template.model.{processing_category[ii]}", package=None))
                     kwargs.append(processing_dict[ii].copy())
                     del kwargs[ii]["mode"]
                 except ModuleNotFoundError:
                     raise ModuleNotFoundError(
-                        f"No module named 'template.{processing_category[ii]}'."
+                        f"No module named 'template.model.{processing_category[ii]}'."
                     )
         for tm, kw in zip(template_modules, kwargs):
             model = tm.processing(model=model, kwargs=kw)
@@ -136,11 +136,23 @@ def main(argv: list[str] | None = None) -> int:
     else:
         opacity = None
 
+    abundance = None
+    if "gas" in config["simulation"]["component"]:
+        abundance_dict = config["gas"]["number_density"]["abundance"]
+        if abundance_dict["mode"] not in ("constant", "array", "unset"):
+            raise ValueError(f"abundance.mode = {abundance_dict["mode"]}. Should be 'constant', 'array' or 'unset'.")
+        if is_set(abundance_dict["mode"]):
+            abundance = Abundance(
+                mode=abundance_dict["mode"],
+                value=abundance_dict["value"],
+            )
+
     model.write_files(
         directory=config["simulation"]["output_dir"],
         write_opacities=write_opacities,
         opacity=opacity,
         smoothing=config["dust"]["opacity"]["smoothing"],
+        abundance=abundance,
         simulation_files_only=config["simulation"]["simulation_files_only"],
         config=config,
     )

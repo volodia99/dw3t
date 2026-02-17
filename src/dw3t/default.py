@@ -12,6 +12,14 @@ DEFAULT_LAYER = {
             "smoothing": False,
         },
     },
+    "gas": {
+        "number_density": {
+            "abundance": {
+                "mode": "unset",
+                "value": "unset",
+            },
+        },
+    },
     "radmc3d": {},
     "stars": {
         "M_star": "unset",

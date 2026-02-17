@@ -38,7 +38,10 @@ T_star                  = 7000.0                                                
 
 [gas]                                                                                                       #necessary_if_gas
 species                 = "co"                                                                              
-abundance               = {
-    mode  = "constant",
-    value = 1e-4,
-}
+
+[gas.number_density]
+processing              = [
+    {mode="prodimo", input_dir="path_to_prodimo_model_directory"},
+    {mode="midplane_symmetry"},
+    {mode="phi_expansion", nphi=128},
+]
