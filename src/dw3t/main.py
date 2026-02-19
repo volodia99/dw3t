@@ -146,7 +146,6 @@ def main(argv: list[str] | None = None) -> int:
         write_opacities=write_opacities,
         opacity=opacity,
         smoothing=config["dust"]["opacity"]["smoothing"],
-        abundance=abundance,
         simulation_files_only=config["simulation"]["simulation_files_only"],
         config=config,
     )

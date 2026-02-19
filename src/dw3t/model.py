@@ -219,7 +219,6 @@ class Model:
         write_opacities:bool=False,
         opacity=None,
         smoothing:bool=False,
-        abundance=None,
         simulation_files_only:bool=False,
         binary:bool=False,
         config:dict,
@@ -626,7 +625,7 @@ class Model:
             print("done.")
         print()
 
-    def _write_numberdens_inp(self, *, directory:str, abundance:Abundance, config:dict):
+    def _write_numberdens_inp(self, *, directory:str, config:dict):
         """
         Function writes the 'numberdens_*.inp' input file.
 
