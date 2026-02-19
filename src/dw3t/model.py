@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 import os
-from typing import Any
+from typing import Any, assert_never
 from pathlib import Path
 import urllib.request
 
@@ -15,10 +15,16 @@ from nonos._geometry import axes_from_geometry, Geometry
 from dw3t._typing import FArray1D, FArrayND
 from dw3t._parsing import is_set
 
-@dataclass(kw_only=True, slots=True)
-class Abundance:
-    mode:str
-    value:FArrayND|float|None=None
+@dataclass(slots=True)
+class Array:
+    x1:FArrayND
+    x2:FArrayND
+    data:FArrayND
+
+    def processing(self, *, method:str)->FArrayND:
+        # TODO add processing methods
+        self.data*=1.0
+        return self.data
 
 @dataclass(kw_only=True, slots=True)
 class NumberDensity:
@@ -27,23 +33,45 @@ class NumberDensity:
     value:float|str
     ngas:FArrayND|None=None
 
-    def reconstruct_spatial_distribution(self, *, directory:str) -> dict[str,FArrayND]:
+    def reconstruct_spatial_distribution(self, *, config:dict) -> dict[str,FArrayND]:
         match self.mode, self.value:
             case "unset", "unset":
+                raise NotImplementedError("mode='unset' not yet implemented.")
+                # TODO deal with config dict processing array
+                directory = config["TODO"]
                 pmodel = pread.read_prodimo(directory)
+                X, Z = (pmodel.x, pmodel.z)
                 distribution = pmodel.nmol[:,:,pmodel.spnames[self.species]]
-                return {"x1":pmodel.x, "x2":pmodel.z, "distribution":distribution}
+                # TODO
+                # convert distribution+coords to Array
+                # process array
+                if distribution.shape!=self.ngas.shape:
+                    raise ValueError(
+                        f"number density of species and ngas do not have the same shape: {distribution.shape}!={self.ngas.shape}."/
+                        "Try to perform some array processing."
+                    )
             case "array", "unset":
+                raise NotImplementedError("mode='array' not yet implemented.")
+                # TODO deal with config dict processing array
+                directory = config["TODO"]
                 pmodel = pread.read_prodimo(directory)
+                X, Z = (pmodel.x, pmodel.z)
                 abundance = pmodel.getAbun(self.species)
+                # TODO
+                # convert abundance+coords to Array
+                # process array
+                if abundance.shape!=self.ngas.shape:
+                    raise ValueError(
+                        f"abundance and ngas do not have the same shape: {abundance.shape}!={self.ngas.shape}."/
+                        "Try to perform some array processing."
+                    )
                 distribution = abundance*self.ngas
-                return {"x1":pmodel.x, "x2":pmodel.z, "distribution":distribution}
             case "constant", float:
                 abundance = self.value
                 distribution = abundance*self.ngas
-                return {"x1":pmodel.x, "x2":pmodel.z, "distribution":distribution}
-
-                
+            case _ as unreachable:
+                assert_never(unreachable)
+        return distribution
 
 @dataclass(kw_only=True, slots=True, frozen=True)
 class Grid:
@@ -143,7 +171,6 @@ class Model:
         write_opacities:bool=False,
         opacity=None,
         smoothing:bool=False,
-        abundance=None,
         simulation_files_only:bool=False,
         binary:bool=False,
         config:dict,
@@ -182,7 +209,6 @@ class Model:
         if "gas" in self.component:
             self._write_numberdens_inp(
                 directory=directory, 
-                abundance=abundance, 
                 config=config
             )
             self._write_gas_velocity_inp(directory=directory)
@@ -549,7 +575,7 @@ class Model:
             print("done.")
         print()
 
-    def _write_numberdens_inp(self, *, directory:str, abundance:Abundance, config:dict):
+    def _write_numberdens_inp(self, *, directory:str, config:dict):
         """
         Function writes the 'numberdens_*.inp' input file.
 
@@ -561,23 +587,22 @@ class Model:
         config_gas = config["gas"]
         species = config_gas["species"]
         number_density = config_gas["number_density"]
-        number_density_array = NumberDensity(
-            abundance=abundance,
-            processing=number_density["processing"],
-        )
-        
-
-        filename = f"numberdens_{species}.binp"
-        path = os.path.join(directory, filename)
-
+        abundance = number_density["abundance"]
         MUSTAR = config["stars"]["mu_star"]
         numberrho_H2 = self.gas.rho/(MUSTAR*uc.m_p.to(u.g))
         if numberrho_H2.unit!=1/u.cm**3:
             raise ValueError(f"gas rho field unit should be 1/cm^3, not {numberrho_H2.unit}.")
-        if abundance["mode"]=="constant":
-            numberrho = numberrho_H2*abundance["value"]
-        elif abundance["mode"]=="array":
-            raise NotImplementedError("mode='array' not yet implemented.")
+        number_density_object = NumberDensity(
+            species=species,
+            mode=abundance["mode"],
+            value=abundance["value"],
+            ngas=numberrho_H2,
+        )
+        numberrho = number_density_object.reconstruct_spatial_distribution(config=config)
+
+        filename = f"numberdens_{species}.binp"
+        path = os.path.join(directory, filename)
+
         print(f"INFO: Writing {path}.....", end="")
         with open(path, "wb") as f:
             header = np.array([1, 8, numberrho.flatten().shape[0]], dtype=int)

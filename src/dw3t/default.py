@@ -18,6 +18,9 @@ DEFAULT_LAYER = {
                 "mode": "unset",
                 "value": "unset",
             },
+            "processing": {
+                "mode": "identity",
+            },
         },
     },
     "radmc3d": {},

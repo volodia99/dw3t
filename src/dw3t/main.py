@@ -136,23 +136,16 @@ def main(argv: list[str] | None = None) -> int:
     else:
         opacity = None
 
-    abundance = None
     if "gas" in config["simulation"]["component"]:
         abundance_dict = config["gas"]["number_density"]["abundance"]
         if abundance_dict["mode"] not in ("constant", "array", "unset"):
             raise ValueError(f"abundance.mode = {abundance_dict["mode"]}. Should be 'constant', 'array' or 'unset'.")
-        if is_set(abundance_dict["mode"]):
-            abundance = Abundance(
-                mode=abundance_dict["mode"],
-                value=abundance_dict["value"],
-            )
 
     model.write_files(
         directory=config["simulation"]["output_dir"],
         write_opacities=write_opacities,
         opacity=opacity,
         smoothing=config["dust"]["opacity"]["smoothing"],
-        abundance=abundance,
         simulation_files_only=config["simulation"]["simulation_files_only"],
         config=config,
     )
