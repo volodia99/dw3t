@@ -11,7 +11,7 @@ processing              = [                                                     
 ]
 
 [dust.opacity]
-mix                     = "birnstiel2018"                                                           #necessary
+mix                     = {mode="birnstiel2018"}                                                           #necessary
 
 [radmc3d]                                                                                       #optional
 modified_random_walk    = 1

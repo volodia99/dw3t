@@ -131,7 +131,8 @@ def main(argv: list[str] | None = None) -> int:
     if write_opacities:=("dust" in config["simulation"]["component"]):
         opacity = Opacity(
             mix=config["dust"]["opacity"]["mix"], 
-            rho=config["dust"]["opacity"]["rho"]
+            rho=config["dust"]["opacity"]["rho"],
+            value=None,
         )
     else:
         opacity = None

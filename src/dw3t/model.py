@@ -56,23 +56,41 @@ class Gas:
 #TODO: Opacity to be improved
 @dataclass(kw_only=True, slots=True)
 class Opacity:
-    mix:str
+    mix:dict
     rho:float|None=None
+    value:str=None
 
     def __post_init__(self):
-        if self.mix.endswith(".lnk"):
-            self.mix = do.diel_from_lnk_file(self.mix)
+        if self.mix["mode"]=="file":
+            if "reference" in self.mix:
+                print(f"Please cite {self.mix["reference"]} when using these optical constants.")
+            self.value = do.diel_from_lnk_file(
+                self.mix["file"], 
+                headerlines=self.mix["headerlines"], 
+            )
             if not is_set(self.rho):
                 raise ValueError(
                     f"Internal density of the mix has to be defined. Please provide 'rho' in dust.opacity."
                 )
-            self.mix.rho = self.rho
-        elif self.mix=="weingartner2001":
-            self.mix = do.diel_WeingartnerDraine2001_astrosil()
-            self.rho = self.mix.rho
-        else:
+            self.value.rho = self.rho
+            set_lambda = set(np.sign(np.diff(self.mix._l)))
+            if len(set_lambda)!=1:
+                raise ValueError(
+                    f"Optical constants should be ordered by monotonically increasing lambda"
+                )
+            if list(set_lambda)[0]==-1:
+                print("INFO: lambda is monotically decreasing. Reversing optical constants arrays.")
+                mix_dict = vars(self.mix)
+                for key in ("_l","_n","_k","_ll","_ln","_lk"):
+                    mix_dict[key] = mix_dict[key][::-1]
+        elif self.mix["mode"] in ("birnstiel2018","ricci2010"):
+            self.value = self.mix["mode"]
             if is_set(self.rho):
                 print("WARNING: unused 'rho' when using dsharp_opac mix.")
+        else:
+            raise ValueError(
+                f"Unknown mode for dust opacity mix: {self.mix["mode"]}. Should be 'file' or 'dsharp_opac'."
+            )
 
 @dataclass(kw_only=True, slots=True)
 class Model:
@@ -146,7 +164,7 @@ class Model:
             if write_opacities:
                 self.write_opacity_files(
                     directory=directory,
-                    opacity=opacity.mix,
+                    opacity=opacity.value,
                     smoothing=smoothing,
                     config=config,
                 )
@@ -397,7 +415,7 @@ class Model:
         Nlam = lam_grid.shape[0]
 
         dustsize = self.dust.size.to(u.cm).value
-        # Nspec = 200
+        ### Nspec = 100
         Nspec = dustsize.shape[0]
         mag = int(np.ceil(np.log10(Nspec)))
 
@@ -431,7 +449,7 @@ class Model:
             Na = 4*dustsize.shape[0]
             a_opac = np.geomspace(amin, amax, Na)
         else:
-            # a_opac = np.geomspace(dustsize.min(), dustsize.max(), Nspec)
+            ### a_opac = np.geomspace(dustsize.min(), dustsize.max(), Nspec)
             a_opac = dustsize
 
         # Computing the opacities
