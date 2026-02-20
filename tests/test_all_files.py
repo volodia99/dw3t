@@ -29,8 +29,14 @@ class TestFileWrite:
             target_subdirectory="idefix_1_dust_fluid/idefix_ref/",
             path=test_data_dir,
         )
+        partial_extraction(
+            target_tarfile=data_dir / "idefix_1_dust_fluid.tar.gz", 
+            target_subdirectory="idefix_1_dust_fluid/opacities/",
+            path=test_data_dir,
+        )
         data_dir_radmc3d_ref = test_data_dir / "idefix_1_dust_fluid" / "radmc3d_ref"
         data_dir_radmc3d = test_data_dir / "idefix_1_dust_fluid" / "radmc3d"
+        data_dir_opacities = test_data_dir / "idefix_1_dust_fluid" / "opacities"
 
         main([str(test_data_dir / "dw3t.toml")])
 
