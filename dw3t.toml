@@ -12,7 +12,7 @@ processing              = [                                                     
 ]
 
 [dust.opacity]
-mix                     = "birnstiel2018"                                                           #necessary
+mix                     = {mode="birnstiel2018"}                                                           #necessary
 # rho                     = "unset"                                                                    #optional/None/to_be_improved?
 # smoothing               = false                                                                   #optional/to_be_tested
 
