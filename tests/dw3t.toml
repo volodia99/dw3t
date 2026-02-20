@@ -11,7 +11,9 @@ processing              = [                                                     
 ]
 
 [dust.opacity]
-mix                     = {mode="birnstiel2018"}                                                           #necessary
+# mix                     = {mode="birnstiel2018"}                                                           #necessary
+mix                     = {mode="file", file="tests/idefix_1_dust_fluid/opacities/Draine_Si_sUV.dat", headerlines=11, reference="Weingartner+Draine2001", extrapolate_lambda_micron={mode="up", min=800, max=10_000, N=50}}                                                           #necessary
+rho                     = 3.5
 
 [radmc3d]                                                                                       #optional
 modified_random_walk    = 1

@@ -73,16 +73,43 @@ class Opacity:
                     f"Internal density of the mix has to be defined. Please provide 'rho' in dust.opacity."
                 )
             self.value.rho = self.rho
-            set_lambda = set(np.sign(np.diff(self.mix._l)))
+            set_lambda = set(np.sign(np.diff(self.value._l)))
             if len(set_lambda)!=1:
                 raise ValueError(
                     f"Optical constants should be ordered by monotonically increasing lambda"
                 )
             if list(set_lambda)[0]==-1:
                 print("INFO: lambda is monotically decreasing. Reversing optical constants arrays.")
-                mix_dict = vars(self.mix)
+                value_dict = vars(self.value)
                 for key in ("_l","_n","_k","_ll","_ln","_lk"):
-                    mix_dict[key] = mix_dict[key][::-1]
+                    value_dict[key] = value_dict[key][::-1]
+            if extrapolate:=self.mix["extrapolate_lambda_micron"]:
+                mandatory_extrapolate_keys = {"min","max","N"}
+                if extrapolate["mode"] in ("up","down") and set(extrapolate.keys())-{"mode"}!=mandatory_extrapolate_keys:
+                    raise ValueError(
+                        f"{(set(extrapolate.keys())-{"mode"}) ^ mandatory_extrapolate_keys} should be specified in 'extrapolate_lambda_micron'."
+                    )
+                lmin = (extrapolate["min"]*u.micron).to(u.cm).value
+                lmax = (extrapolate["max"]*u.micron).to(u.cm).value
+                if extrapolate["mode"]=="up":
+                    self.value.extrapolate_constants_up(
+                        lmin=lmin, 
+                        lmax=lmax, 
+                        n=extrapolate["N"], 
+                        kind="second",
+                    )
+                elif extrapolate["mode"]=="down":
+                    self.value.extrapolate_constants_down(
+                        lmin=lmin, 
+                        lmax=lmax, 
+                        n=extrapolate["N"], 
+                        kind="second",
+                    )
+                else:
+                    raise ValueError(
+                        f"Unknown extrapolation mode in 'extrapolate_lambda_micron': {extrapolate["mode"]}. Should be 'up' or 'down'."
+                    )
+
         elif self.mix["mode"] in ("birnstiel2018","ricci2010"):
             self.value = self.mix["mode"]
             if is_set(self.rho):

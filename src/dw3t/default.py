@@ -8,6 +8,9 @@ DEFAULT_LAYER = {
     },
     "dust": {
         "opacity": {
+            "mix": {
+                "extrapolate_lambda_micron": {},
+            },
             "rho": "unset",
             "smoothing": False,
         },
