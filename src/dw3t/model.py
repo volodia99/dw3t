@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import os
 from typing import Any, assert_never
 from pathlib import Path
@@ -116,7 +116,7 @@ class Gas:
 class Opacity:
     mix:dict
     rho:float|None=None
-    value:str=None
+    value:str=field(init=False) # not always a string, can be instance of do.diel_const
 
     def __post_init__(self):
         if self.mix["mode"]=="file":
@@ -175,7 +175,7 @@ class Opacity:
         else:
             raise ValueError(
                 f"Unknown mode for dust opacity mix: {self.mix["mode"]}. Should be 'file' or 'dsharp_opac'."
-            )
+            )        
 
 @dataclass(kw_only=True, slots=True)
 class Model:
