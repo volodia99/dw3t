@@ -10,28 +10,54 @@ import astropy.constants as uc
 
 import inifix
 import dsharp_opac as do
+import prodimopy.read as pread
 
 from nonos._geometry import axes_from_geometry, Geometry
 from dw3t._typing import FArray1D, FArrayND
 from dw3t._parsing import is_set
 
 @dataclass(slots=True)
-class Array:
-    x1:FArrayND
-    x2:FArrayND
-    data:FArrayND
+class FromProdimo:
+    input_array:FArray2D
+    prodimo_model:pread.Data_ProDiMo
+    simulation_model:Model
 
-    def processing(self, *, method:str)->FArrayND:
+    def processed_array(self, *, method:str)->FArrayND:
         # TODO add processing methods
         self.data*=1.0
         return self.data
+
+    @property
+    def cart2pol(self):
+        """
+        Conversion of the coordinate system to cartesian.
+        """
+        r = np.sqrt(self.prodimo_model.x**2+self.prodimo_model.z**2)
+        theta = np.arctan2(self.prodimo_model.x, self.prodimo_model.z)
+        return (r, theta)
+
+    def interpolate_spherical(self):
+        x_2d = np.flip(self.prodimo_model.x, -1)
+        z_2d = np.flip(self.prodimo_model.z, -1)
+        data_species = np.flip(self.input_array, -1)
+        r_2d, theta_2d = self.cart2pol
+
+        rmed = simulation_model.grid.x1c
+        thetamed = simulation_model.grid.x2c
+        ntheta = len(thetamed)
+        thetamed = thetamed[0:ntheta//2]
+        RR, TT = np.meshgrid(rmed, thetamed, indexing="ij")
+
+        points = np.array([r_2d.flatten(), theta_2d.flatten()]).T
+        idefix_data_species = griddata(points, data_species.flatten(), (RR, TT), method="linear")
+
 
 @dataclass(kw_only=True, slots=True)
 class NumberDensity:
     species:str
     mode:str
     value:float|str
-    ngas:FArrayND|None=None
+    ngas:FArrayND|None=None #TODO: rather use model?
 
     def reconstruct_spatial_distribution(self, *, config:dict) -> dict[str,FArrayND]:
         match self.mode, self.value:
