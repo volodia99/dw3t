@@ -89,25 +89,31 @@ This section for now contains only the information about the `opacity`, especial
 
 ```toml
 [dust.opacity]
-mix = "birnstiel2018"
+mix = {mode="birnstiel2018"}
 ```
 or
 ```toml
 [dust.opacity]
-mix = "ricci2010"
+mix = {mode="ricci2010"}
 ```
 
 See the corresponding papers for more info.
 
 
-### (ii) Using a .lnk file
+### (ii) Using a optical constant file
 
 Including the opacity constants. In that case you need to provide the internal density (`rho` \[g/cm3\]) of the mix.
 ```toml
 [dust.opacity]
-mix = "path_to_lnk_file"
+mix = {mode="file", file="path_to_optical_constant_file"}
 rho = 2.0
 ```
+In the `mix` dictionary, you can also provide:
+- `headerlines` (`int`): remove the corresponding lines of the header
+- `reference` (`str`): if you know the reference of the optical constant file
+- `extrapolate_lambda_micron` (`dict`): to extrapolate the optical constants: 
+    - `mode="up"`: at larger wavelengths in microns, from `min` (`float`) where the constants start to be fitted, to `max` (`float`), with `N` (`int`) values.
+    - `mode="down"`: at shorter wavelengths in microns, from `max` (`float`) where the constants start to be fitted, to `min` (`float`), with `N` (`int`) values.
 
 ### 3. Section `[gas]`
 

@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import os
 from typing import Any
 from pathlib import Path
@@ -56,20 +56,68 @@ class Gas:
 #TODO: Opacity to be improved
 @dataclass(kw_only=True, slots=True)
 class Opacity:
-    mix:str
+    mix:dict
     rho:float|None=None
+    value:str=field(init=False) # not always a string, can be instance of do.diel_const
 
     def __post_init__(self):
-        if self.mix.endswith(".lnk"):
-            self.mix = do.diel_from_lnk_file(self.mix)
+        if self.mix["mode"]=="file":
+            if "reference" in self.mix:
+                print(f"Please cite {self.mix["reference"]} when using these optical constants.")
+            self.value = do.diel_from_lnk_file(
+                self.mix["file"], 
+                headerlines=self.mix["headerlines"], 
+            )
             if not is_set(self.rho):
                 raise ValueError(
                     f"Internal density of the mix has to be defined. Please provide 'rho' in dust.opacity."
                 )
-            self.mix.rho = self.rho
-        else:
+            self.value.rho = self.rho
+            set_lambda = set(np.sign(np.diff(self.value._l)))
+            if len(set_lambda)!=1:
+                raise ValueError(
+                    f"Optical constants should be ordered by monotonically increasing lambda"
+                )
+            if list(set_lambda)[0]==-1:
+                print("INFO: lambda is monotically decreasing. Reversing optical constants arrays.")
+                value_dict = vars(self.value)
+                for key in ("_l","_n","_k","_ll","_ln","_lk"):
+                    value_dict[key] = value_dict[key][::-1]
+            if extrapolate:=self.mix["extrapolate_lambda_micron"]:
+                mandatory_extrapolate_keys = {"min","max","N"}
+                if extrapolate["mode"] in ("up","down") and set(extrapolate.keys())-{"mode"}!=mandatory_extrapolate_keys:
+                    raise ValueError(
+                        f"{(set(extrapolate.keys())-{"mode"}) ^ mandatory_extrapolate_keys} should be specified in 'extrapolate_lambda_micron'."
+                    )
+                lmin = (extrapolate["min"]*u.micron).to(u.cm).value
+                lmax = (extrapolate["max"]*u.micron).to(u.cm).value
+                if extrapolate["mode"]=="up":
+                    self.value.extrapolate_constants_up(
+                        lmin=lmin, 
+                        lmax=lmax, 
+                        n=extrapolate["N"], 
+                        kind="second",
+                    )
+                elif extrapolate["mode"]=="down":
+                    self.value.extrapolate_constants_down(
+                        lmin=lmin, 
+                        lmax=lmax, 
+                        n=extrapolate["N"], 
+                        kind="second",
+                    )
+                else:
+                    raise ValueError(
+                        f"Unknown extrapolation mode in 'extrapolate_lambda_micron': {extrapolate["mode"]}. Should be 'up' or 'down'."
+                    )
+
+        elif self.mix["mode"] in ("birnstiel2018","ricci2010"):
+            self.value = self.mix["mode"]
             if is_set(self.rho):
                 print("WARNING: unused 'rho' when using dsharp_opac mix.")
+        else:
+            raise ValueError(
+                f"Unknown mode for dust opacity mix: {self.mix["mode"]}. Should be 'file' or 'dsharp_opac'."
+            )        
 
 @dataclass(kw_only=True, slots=True)
 class Model:
@@ -143,7 +191,7 @@ class Model:
             if write_opacities:
                 self.write_opacity_files(
                     directory=directory,
-                    opacity=opacity.mix,
+                    opacity=opacity.value,
                     smoothing=smoothing,
                     config=config,
                 )
@@ -394,6 +442,7 @@ class Model:
         Nlam = lam_grid.shape[0]
 
         dustsize = self.dust.size.to(u.cm).value
+        ### Nspec = 100
         Nspec = dustsize.shape[0]
         mag = int(np.ceil(np.log10(Nspec)))
 
@@ -427,6 +476,7 @@ class Model:
             Na = 4*dustsize.shape[0]
             a_opac = np.geomspace(amin, amax, Na)
         else:
+            ### a_opac = np.geomspace(dustsize.min(), dustsize.max(), Nspec)
             a_opac = dustsize
 
         # Computing the opacities
