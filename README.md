@@ -2,7 +2,7 @@
 [![PyPI](https://img.shields.io/pypi/v/dw3t.svg?logo=pypi&logoColor=white&label=PyPI)](https://pypi.org/project/dw3t/)
 [![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
 
-***Interface between spherical datasets from simulation outputs (e.g., readable with [nonos](https://github.com/la-niche/nonos)) to radmc3d.***
+***Interface between spherical datasets from simulation outputs (e.g., readable with [nonos](https://github.com/la-niche/nonos)) to radmc3d. Some of the work has been adapted from the [radmc3d module of dustpylib](https://dustpylib.readthedocs.io/en/latest/radmc3d.html).***
 
 ## Development status
 
