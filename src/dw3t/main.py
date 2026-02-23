@@ -132,7 +132,6 @@ def main(argv: list[str] | None = None) -> int:
         opacity = Opacity(
             mix=config["dust"]["opacity"]["mix"], 
             rho=config["dust"]["opacity"]["rho"],
-            value=None,
         )
     else:
         opacity = None
