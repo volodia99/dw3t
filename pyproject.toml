@@ -6,14 +6,14 @@ readme = "README.md"
 authors = [
     { name = "gwf" }
 ]
-requires-python = ">=3.11"
+requires-python = ">=3.11.4"
 dependencies = [
-    "astropy>=7.2.0",
+    "astropy>=7.0.0",
     "deep-chainmap>=0.1.3",
     "dsharp-opac>=1.1.13",
     "inifix>=6.1.1",
     "nonos>=0.19.1",
-    "numpy>=2.4.0",
+    "numpy>=2.1.0",
     "prodimopy>=2.5.2",
     "scipy>=1.16.3",
     "tomli-w>=1.2.0",
@@ -30,4 +30,27 @@ build-backend = "flit_core.buildapi"
 [dependency-groups]
 dev = [
     "pytest>=9.0.2",
+]
+
+[tool.uv]
+constraint-dependencies = [
+    # via astropy
+    "pyerfa>=2.0.1.3",
+    # via dsharp-opac
+    "setuptools>=70.0.0",
+    "mpmath>=1.2.1",
+    "matplotlib>=3.8.0",
+    "pillow>=10.0.0",
+]
+no-build-package = [
+    "astropy",
+    "contourpy",
+    "kiwisolver",
+    "matplotlib",
+    "numpy",
+    "pandas",
+    "pillow",
+    "pyerfa",
+    "pyyaml",
+    "scipy",
 ]
