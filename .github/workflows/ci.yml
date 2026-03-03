@@ -39,20 +39,11 @@ jobs:
         cache-suffix: ${{ matrix.install-args }}
 
     - name: Build
-      run: uv sync --group test --group covcheck ${{ matrix.install-args }}
+      run: uv sync --group dev ${{ matrix.install-args }}
 
     - name: Test
       run: |
-        uv run --no-sync coverage run --parallel-mode -m \
-          pytest --color=yes ${{ contains(matrix.install-args, 'lowest') && '-Wdefault' || '' }}
-
-    - name: Upload coverage data
-      uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
-      with:
-        path: .coverage.*
-        name: lick_coverage_data-${{ matrix.python-version }}${{ matrix.install-args }}
-        if-no-files-found: error
-        include-hidden-files: true
+        uv run --no-sync pytest --color=yes ${{ contains(matrix.install-args, 'lowest') && '-Wdefault' || '' }}
 
   platform-tests:
     strategy:
@@ -71,7 +62,7 @@ jobs:
         prune-cache: false
 
     - name: Build
-      run: uv sync --group test --no-editable
+      run: uv sync --group dev --no-editable
 
     - name: Test
       run: uv run --no-sync pytest --color=yes
