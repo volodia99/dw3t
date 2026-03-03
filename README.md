@@ -63,7 +63,7 @@ Each element of the list has the form `{mode="choose_our_mode", **kwargs}`. For 
 - "builtin": use [nonos](https://github.com/la-niche/nonos) to read the grid and the fields necessary to compute a radmc3d model (tested only with idefix simulations for now). This mode comes necessary with `input_number` (`int`) and `input_dir` (`str`), which are respectively the number and the directory of the simulated output. Moreover, for idefix simulations you need to add the `internal_rho` (`float`) parameter (\[g/cm3\]) if `"dust"` in included in `component`.
 - "phi_expansion": extend azimuthally a 2D spherical ($r$, $\theta$) simulation, using `nphi` cells in the $\phi$ direction, and returns a 3D spherical model.
 
-See in `src/dw3t/template` for more info.
+See in `src/dw3t/template/model` for more info.
 
 ### (ii) with a user-defined python file
 
@@ -71,7 +71,7 @@ See in `src/dw3t/template` for more info.
 ```toml
 processing = {
     mode = "userdef",
-    file = "src/dw3t/template/userdef.py",
+    file = "src/dw3t/template/model/userdef.py",
     input_number = 0,
     input_dir = "tests/data/idefix_1_dust_fluid",
     internal_rho = 2.0,
@@ -79,7 +79,7 @@ processing = {
 ```
 When `mode = "userdef"`, only the argument `file` is necessary, which corresponds to the absolute path of the user-defined python processing file, which has to contain the `processing` function, with signature `processing(*, model:"Model", kwargs:dict) -> "Model"`, and returns a model object. This mode is for now incompatible with all other modes, so you need to post-process your data yourself in the given `file`.
 
-See in `src/dw3t/template/userdef.py` for more info.
+See in `src/dw3t/template/model/userdef.py` for more info.
 
 ### 2. Section `[dust]`
 
@@ -119,9 +119,20 @@ In the `mix` dictionary, you can also provide:
 
 ***Mandatory parameters:***
 
-The two main parameters here are `species` and `abundance`. 
-- `species`: name of the species (`str`). Used to construct the lines.inp, molecule_*.dat and numberdens_*.inp radmc3d files.
-- `abundance`: compute the abundance of the corresponding `species` (`dict`). Needs the arguments `mode` (`str`) ("constant") and `value` (`float`).
+The main parameter here is `species`. 
+- `species` (`str`): name of the species. Used to construct the lines.inp, molecule_\*.dat and numberdens_\*.inp radmc3d files.
+
+***Optional parameters:***
+
+- `processing` (`list[dict]`) used to process the gas-related arrays, if needed (for now, the number density and/or the gas temperature).
+- `abundance` (`dict`): if set, computes the molecular abundance of the corresponding `species`. It is defined with the keys `mode` (`str`), and `value` (`float`).
+- `temperature` (`dict`): if set, retrieve the gas temperature, for now from a prodimo model. It is defined with the key `mode` (`str`).
+
+#### 3.1. `abundance`
+
+***CASE 1: constant abundance***
+
+When `mode="constant"`, the corresponding `value` must be defined:
 ```toml
 [gas]
 species = "co"
@@ -130,9 +141,47 @@ abundance = {
     value = 1e-4,
 }
 ```
+In that example, the gas number density resulting from the simulated output is multiplied by a constant abundance 1e-4, corresponding to a prescribed abundance for CO.
 
-***To be implemented:***
-Add a `mode="array"` for the abundances, using the ones computed, e.g., by a thermo-chemical code. 
+***CASE 2: 2D number density***
+
+By default, an `abundance` that is not provided is unset. `processing` has then to be given to indicate how to retrieve the number density array associated to `species`, instead of computing it from the simulated gas density times an `abundance`.
+```toml
+[gas]
+species = "co"
+processing = [
+    {mode="prodimo", prodimo_dir="path_to_prodimo_model_directory"},
+]
+```
+In that example, the CO number density is retrieved from a 2D (prodimo)[https://prodimo.iwf.oeaw.ac.at] model. Th 2D array is then extended vertically by mirror symmetry and in 3D with an azimuthal expansion, removing the potiential NaNs in the inner regions and smoothing the interpolated array with a gaussian kernel.
+
+***CASE 3: 2D abundance***
+
+When `mode="array"`, `value` is `None` and the `processing` argument must be specified to indicate how to retrieve the abundance array associated to `species`.
+```toml
+[gas]
+species = "co"
+abundance = {
+    mode = "array",
+}
+processing = [
+    {mode="prodimo", prodimo_dir="path_to_prodimo_model_directory"},
+]
+```
+***Remark:*** In CASE 2, we retrieve the CO number density array from a prodimo model, whereas in CASE 3 we retrieve the CO abundance array.
+
+#### 3.2. `temperature`
+
+When `mode="array"`, the `processing` argument must be specified to indicate how to retrieve the gas temperature array, from now. For now the processing is the same for the temperature and the number density, if asked.
+```toml
+[gas]
+temperature = {
+    mode = "array",
+}
+processing = [
+    {mode="prodimo", prodimo_dir="path_to_prodimo_model_directory"},
+]
+```
 
 ### 4. radmc3d-specific sections
 
@@ -174,7 +223,7 @@ nphot_scat = 1_000
 
 #### (iii) `[wavelength_micron]` (optional):
 
-Used in stars.inp, wavelength_micron.inp. Corresponds to the wavelength coverage used to define the stellar spectrum, from `min` (`float`) to `max` (`float`) with `N` (`int`) wavelength points. Note that for simplicity we use the same definition for the wavelength coverage to construct the dustkapscatmat_*.inp file. By default:
+Used in stars.inp, wavelength_micron.inp. Corresponds to the wavelength coverage used to define the stellar spectrum, from `min` (`float`) to `max` (`float`) with `N` (`int`) wavelength points. Note that for simplicity we use the same definition for the wavelength coverage to construct the dustkapscatmat_\*.inp file. By default:
 ```toml
 [wavelength_micron]
 min = 1

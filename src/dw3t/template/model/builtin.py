@@ -18,16 +18,17 @@ def processing(*, model:"Model", kwargs:dict) -> "Model":
     input_dir = kwargs["input_dir"]
     ds = GasDataSet(file, directory=input_dir)
 
-    if ds.native_geometry!=model.geometry:
-        raise NotImplementedError(f"native_geometry='{ds.native_geometry}' should be {model.geometry}")
+    if ds.native_geometry!="spherical":
+        raise NotImplementedError(f"native_geometry={ds.native_geometry} should be 'spherical'.")
 
     UNIT_DENSITY = model.unit_mass_msun / model.unit_length_au**3
     UNIT_VELOCITY = np.sqrt(uc.G*model.unit_mass_msun/model.unit_length_au).to(u.m/u.s)
 
     grid = Grid(
-            x1 = ((ds.coords.get_axis_array("r") * model.unit_length_au).to(u.cm)),#.value,
-            x2 = ds.coords.get_axis_array("theta") * u.radian,
-            x3 = ds.coords.get_axis_array("phi") * u.radian,
+            x1=((ds.coords.get_axis_array("r") * model.unit_length_au).to(u.cm)),#.value,
+            x2=ds.coords.get_axis_array("theta") * u.radian,
+            x3=ds.coords.get_axis_array("phi") * u.radian,
+            geometry=ds.native_geometry,
         )
 
     gas = None

@@ -8,7 +8,7 @@ def processing(*, model:"Model", kwargs:dict) -> "Model":
     #TODO: to be improved?
     if model.dimension!=2:
         raise ValueError(f"phi_expansion works in 2D, model is {model.dimension}D.")
-    if model.geometry!="spherical":
+    if model.grid.geometry!="spherical":
         raise ValueError(f"phi_expansion works if the model geometry is spherical.")
     if Axis.AZIMUTH in model.reduced_axes:
         raise ValueError(f"phi_expansion works if there is ONE cell only in the azimuthal direction.")
@@ -17,9 +17,10 @@ def processing(*, model:"Model", kwargs:dict) -> "Model":
     phi = np.linspace(0, 2.*np.pi, nphi+1) * u.radian
 
     grid=Grid(
-        x1 = model.grid.x1,
-        x2 = model.grid.x2,
-        x3 = phi,
+        x1=model.grid.x1,
+        x2=model.grid.x2,
+        x3=phi,
+        geometry=model.grid.geometry,
     )
 
     gas = None
