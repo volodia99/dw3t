@@ -27,6 +27,9 @@ dw3t = "dw3t.main:main"
 requires = ["flit_core >=3.11,<4"]
 build-backend = "flit_core.buildapi"
 
+[tool.uv.extra-build-dependencies]
+setuptools = ["lib2to3"]
+
 [dependency-groups]
 dev = [
     "pytest>=9.0.2",
