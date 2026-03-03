@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 import os
-from typing import Any, assert_never
+from typing import Any
 from pathlib import Path
 import urllib.request
 import sys
@@ -19,6 +19,11 @@ import prodimopy.read as pread
 from nonos._geometry import axes_from_geometry, Geometry
 from dw3t._typing import FArray1D, FArrayND
 from dw3t._parsing import is_set
+
+if sys.version_info >= (3, 11):
+    from typing import assert_never
+else:
+    from typing_extensions import assert_never
 
 if sys.version_info >= (3, 13):
     from copy import replace
