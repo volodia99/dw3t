@@ -3,7 +3,8 @@ import os
 from typing import Any, assert_never
 from pathlib import Path
 import urllib.request
-from copy import replace
+import sys
+
 
 import numpy as np
 import astropy.units as u
@@ -18,6 +19,12 @@ import prodimopy.read as pread
 from nonos._geometry import axes_from_geometry, Geometry
 from dw3t._typing import FArray1D, FArrayND
 from dw3t._parsing import is_set
+
+if sys.version_info >= (3, 13):
+    from copy import replace
+else:
+    from dataclasses import replace
+
 
 @dataclass(kw_only=True, slots=True, frozen=True)
 class CellCenters3D:
@@ -267,7 +274,7 @@ class Opacity:
     def __post_init__(self):
         if self.mix["mode"]=="file":
             if "reference" in self.mix:
-                print(f"Please cite {self.mix["reference"]} when using these optical constants.")
+                print(f"Please cite {self.mix['reference']} when using these optical constants.")
             self.value = do.diel_from_lnk_file(
                 self.mix["file"], 
                 headerlines=self.mix["headerlines"], 
@@ -291,7 +298,7 @@ class Opacity:
                 mandatory_extrapolate_keys = {"min","max","N"}
                 if extrapolate["mode"] in ("up","down") and set(extrapolate.keys())-{"mode"}!=mandatory_extrapolate_keys:
                     raise ValueError(
-                        f"{(set(extrapolate.keys())-{"mode"}) ^ mandatory_extrapolate_keys} should be specified in 'extrapolate_lambda_micron'."
+                        f"{(set(extrapolate.keys())-{'mode'}) ^ mandatory_extrapolate_keys} should be specified in 'extrapolate_lambda_micron'."
                     )
                 lmin = (extrapolate["min"]*u.micron).to(u.cm).value
                 lmax = (extrapolate["max"]*u.micron).to(u.cm).value
@@ -311,7 +318,7 @@ class Opacity:
                     )
                 else:
                     raise ValueError(
-                        f"Unknown extrapolation mode in 'extrapolate_lambda_micron': {extrapolate["mode"]}. Should be 'up' or 'down'."
+                        f"Unknown extrapolation mode in 'extrapolate_lambda_micron': {extrapolate['mode']}. Should be 'up' or 'down'."
                     )
 
         elif self.mix["mode"] in ("birnstiel2018","ricci2010"):
@@ -320,7 +327,7 @@ class Opacity:
                 print("WARNING: unused 'rho' when using dsharp_opac mix.")
         else:
             raise ValueError(
-                f"Unknown mode for dust opacity mix: {self.mix["mode"]}. Should be 'file' or 'dsharp_opac'."
+                f"Unknown mode for dust opacity mix: {self.mix['mode']}. Should be 'file' or 'dsharp_opac'."
             )        
 
 @dataclass(kw_only=True, slots=True)
@@ -937,9 +944,9 @@ class Model:
                 for ilam in range(Nlam):
                     f.write(
                         f"{lam_grid[ilam].value:.6e} "\
-                        f"{opac_dict["k_abs"][ia, ilam]:.6e} "\
-                        f"{opac_dict["k_sca"][ia, ilam]:.6e} "\
-                        f"{opac_dict["g"][ia, ilam]:.6e}\n"
+                        f"{opac_dict['k_abs'][ia, ilam]:.6e} "\
+                        f"{opac_dict['k_sca'][ia, ilam]:.6e} "\
+                        f"{opac_dict['g'][ia, ilam]:.6e}\n"
                     )
                 f.write("\n")
                 for theta in opac_dict["theta"]:

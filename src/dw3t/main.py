@@ -139,7 +139,7 @@ def main(argv: list[str] | None = None) -> int:
     if "gas" in config["simulation"]["component"]:
         abundance_dict = config["gas"]["abundance"]
         if abundance_dict["mode"] not in ("constant", "array", "unset"):
-            raise ValueError(f"abundance.mode = {abundance_dict["mode"]}. Should be 'constant', 'array' or 'unset'.")
+            raise ValueError(f"abundance.mode = {abundance_dict['mode']}. Should be 'constant', 'array' or 'unset'.")
 
     model.write_files(
         directory=config["simulation"]["output_dir"],
