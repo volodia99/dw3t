@@ -16,15 +16,11 @@ DEFAULT_LAYER = {
         },
     },
     "gas": {
-        "number_density": {
-            "abundance": {
-                "mode": "unset",
-                "value": "unset",
-            },
-            "processing": {
-                "mode": "identity",
-            },
+        "abundance": {
+            "mode": "unset",
+            "value": "unset",
         },
+        "temperature": {},
     },
     "radmc3d": {},
     "stars": {

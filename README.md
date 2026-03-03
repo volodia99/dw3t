@@ -119,18 +119,23 @@ In the `mix` dictionary, you can also provide:
 
 ***Mandatory parameters:***
 
-The two main parameters here are `species` and `number_density`. 
-- `species`: name of the species (`str`). Used to construct the lines.inp, molecule_\*.dat and numberdens_\*.inp radmc3d files.
-- `number_density`: computes the number density of the corresponding `species` (`dict`). Needs the arguments `abundance` (`dict`) (when defining a molecular abundance), and/or `processing` (`list[dict]`) depending on the need. The `abundance` dictionary is defined with the keys `mode` (`str`), and `value` (`float`).
+The main parameter here is `species`. 
+- `species` (`str`): name of the species. Used to construct the lines.inp, molecule_\*.dat and numberdens_\*.inp radmc3d files.
 
-***CASE 1***
+***Optional parameters:***
+
+- `processing` (`list[dict]`) used to process the gas-related arrays, if needed (for now, the number density and/or the gas temperature).
+- `abundance` (`dict`): if set, computes the molecular abundance of the corresponding `species`. It is defined with the keys `mode` (`str`), and `value` (`float`).
+- `temperature` (`dict`): if set, retrieve the gas temperature, for now from a prodimo model. It is defined with the key `mode` (`str`).
+
+#### 3.1. `abundance`
+
+***CASE 1: constant abundance***
 
 When `mode="constant"`, the corresponding `value` must be defined:
 ```toml
 [gas]
 species = "co"
-
-[gas.number_density]
 abundance = {
     mode = "constant",
     value = 1e-4,
@@ -138,35 +143,45 @@ abundance = {
 ```
 In that example, the gas number density resulting from the simulated output is multiplied by a constant abundance 1e-4, corresponding to a prescribed abundance for CO.
 
-***CASE 2***
+***CASE 2: 2D number density***
 
-By default, an `abundance` that is not provided is unset. `processing` has then to be given to indicate how to retrieve the number density array associated to `species`, instead of computing it from the simulated gas density times `abundance`.
+By default, an `abundance` that is not provided is unset. `processing` has then to be given to indicate how to retrieve the number density array associated to `species`, instead of computing it from the simulated gas density times an `abundance`.
 ```toml
 [gas]
 species = "co"
-
-[gas.number_density]
 processing = [
-    {mode="prodimo", input_dir="path_to_prodimo_model_directory"},
-    {mode="midplane_symmetry"},
-    {mode="phi_expansion", nphi=128},
+    {mode="prodimo", prodimo_dir="path_to_prodimo_model_directory"},
 ]
 ```
-In that example, the CO number density is retrieved from a 2D (prodimo)[https://prodimo.iwf.oeaw.ac.at] model. Th 2D array is then extended vertically by mirror symmetry and in 3D with an azimuthal expansion.
+In that example, the CO number density is retrieved from a 2D (prodimo)[https://prodimo.iwf.oeaw.ac.at] model. Th 2D array is then extended vertically by mirror symmetry and in 3D with an azimuthal expansion, removing the potiential NaNs in the inner regions and smoothing the interpolated array with a gaussian kernel.
 
-***CASE 3***
+***CASE 3: 2D abundance***
 
 When `mode="array"`, `value` is `None` and the `processing` argument must be specified to indicate how to retrieve the abundance array associated to `species`.
 ```toml
 [gas]
 species = "co"
-
-[gas.number_density]
 abundance = {
     mode = "array",
 }
+processing = [
+    {mode="prodimo", prodimo_dir="path_to_prodimo_model_directory"},
+]
 ```
-***Remark:*** In CASE 2, we compute the CO number density array, whereas in CASE 3 we compute the CO abundance.
+***Remark:*** In CASE 2, we retrieve the CO number density array from a prodimo model, whereas in CASE 3 we retrieve the CO abundance array.
+
+#### 3.2. `temperature`
+
+When `mode="array"`, the `processing` argument must be specified to indicate how to retrieve the gas temperature array, from now. For now the processing is the same for the temperature and the number density, if asked.
+```toml
+[gas]
+temperature = {
+    mode = "array",
+}
+processing = [
+    {mode="prodimo", prodimo_dir="path_to_prodimo_model_directory"},
+]
+```
 
 ### 4. radmc3d-specific sections
 

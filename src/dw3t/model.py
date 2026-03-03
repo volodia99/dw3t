@@ -3,10 +3,13 @@ import os
 from typing import Any, assert_never
 from pathlib import Path
 import urllib.request
+from copy import replace
 
 import numpy as np
 import astropy.units as u
 import astropy.constants as uc
+from scipy.interpolate import griddata
+from scipy.ndimage import gaussian_filter
 
 import inifix
 import dsharp_opac as do
@@ -16,94 +19,194 @@ from nonos._geometry import axes_from_geometry, Geometry
 from dw3t._typing import FArray1D, FArrayND
 from dw3t._parsing import is_set
 
-@dataclass(slots=True)
-class FromProdimo:
-    input_array:FArray2D
-    prodimo_model:pread.Data_ProDiMo
-    simulation_model:Model
+@dataclass(kw_only=True, slots=True, frozen=True)
+class CellCenters3D:
+    x1c: FArray1D[u.Quantity]
+    x2c: FArray1D[u.Quantity]
+    x3c: FArray1D[u.Quantity]
+    geometry: Geometry
 
-    def processed_array(self, *, method:str)->FArrayND:
-        # TODO add processing methods
-        self.data*=1.0
-        return self.data
+    def __post_init__(self):
+        if self.x1c.shape!=self.x2c.shape!=self.x3c.shape:
+            raise ValueError(
+                f"{self.x1c.shape=}, {self.x2c.shape=} and {self.x3c.shape=} should be the same."
+            )
 
     @property
-    def cart2pol(self):
+    def shape(self):
+        return self.x1c.shape
+
+@dataclass(slots=True, frozen=True, kw_only=True)
+class Array:
+    cells:CellCenters3D
+    data:FArrayND
+    config:dict
+
+    def __post_init__(self):
+        if self.cells.shape!=self.data.shape:
+            raise ValueError(
+                f"{self.cells.shape=} should be equal to {self.data.shape=}"
+            )
+        try:
+            unit = self.data.unit
+        except AttributeError:
+            raise AttributeError(
+                f"data should have a unit."
+            )
+
+    def _cart2pol(self, *, x, z):
         """
         Conversion of the coordinate system to cartesian.
         """
-        r = np.sqrt(self.prodimo_model.x**2+self.prodimo_model.z**2)
-        theta = np.arctan2(self.prodimo_model.x, self.prodimo_model.z)
+        r = np.sqrt(x**2+z**2)
+        theta = np.arctan2(x, z)
         return (r, theta)
 
-    def interpolate_spherical(self):
-        x_2d = np.flip(self.prodimo_model.x, -1)
-        z_2d = np.flip(self.prodimo_model.z, -1)
-        data_species = np.flip(self.input_array, -1)
-        r_2d, theta_2d = self.cart2pol
+    def interpolate_on_half_spherical_disk(self, output_cells:"CellCenters3D") -> "Array":
+        if output_cells.geometry!="spherical":
+            raise NotImplementedError(f"Grid geometry={output_cells.geometry} should be 'spherical'.")
+        #TODO: add raise condition if interpolate_on_half_spherical_disk not applicable, ie not polar coordinate and 2D ?
+        unit_length_au = self.config["simulation"]["unit_length_au"]
 
-        rmed = simulation_model.grid.x1c
-        thetamed = simulation_model.grid.x2c
-        ntheta = len(thetamed)
-        thetamed = thetamed[0:ntheta//2]
-        RR, TT = np.meshgrid(rmed, thetamed, indexing="ij")
+        x_3d = np.flip(self.cells.x1c, axis=1)
+        z_3d = np.flip(self.cells.x2c, axis=1)
+        phi_3d = np.flip(self.cells.x3c, axis=1)
+        data_species = np.flip(self.data, axis=1)
+        r_3d, theta_3d = self._cart2pol(
+            x=x_3d,
+            z=z_3d,
+        )
+    
+        ntheta = output_cells.shape[1]
+        output_r2d_half = output_cells.x1c[:,0:ntheta//2,0]
+        output_theta2d_half = output_cells.x2c[:,0:ntheta//2,0]
 
-        points = np.array([r_2d.flatten(), theta_2d.flatten()]).T
-        idefix_data_species = griddata(points, data_species.flatten(), (RR, TT), method="linear")
+        points = np.array([(r_3d[:,:,0].to(u.au)/(unit_length_au*u.au)).value.flatten(), theta_3d[:,:,0].value.flatten()]).T
+        interpolated_data_species = griddata(points, data_species[:,:,0].flatten(), ((output_r2d_half.to(u.au)/(unit_length_au*u.au)).value, output_theta2d_half.value), method="linear")
+        return replace(
+            self,
+            cells=CellCenters3D(
+                x1c=np.atleast_3d(output_r2d_half),
+                x2c=np.atleast_3d(output_theta2d_half),
+                x3c=np.zeros_like(np.atleast_3d(output_r2d_half).value)*u.radian,
+                geometry=output_cells.geometry,
+            ),
+            data=np.atleast_3d(interpolated_data_species)*data_species.unit,
+        )
 
+    def phi_expansion(self, output_cells:"CellCenters3D") -> "Array":
+        if output_cells.geometry!="spherical":
+            raise NotImplementedError(f"Grid geometry={output_cells.geometry} should be 'spherical'.")
+        if (phi_shape:=self.data.shape[2])!=1:
+            raise ValueError(
+                f"{phi_shape=}. It should be 1 to perform a phi_expansion operation."
+            )
+        if self.data.shape!=self.cells.x3c.shape:
+            raise ValueError(
+                f"There is a discrepancy between the data shape: {self.data.shape}, and cells.x3c: {self.cells.x3c.shape}."
+            )
 
-@dataclass(kw_only=True, slots=True)
-class NumberDensity:
-    species:str
-    mode:str
-    value:float|str
-    ngas:FArrayND|None=None #TODO: rather use model?
+        processed_data = np.broadcast_to(
+            self.data, 
+            output_cells.shape,
+        )*self.data.unit
+        processed_x1c = np.broadcast_to(
+            self.cells.x1c, 
+            output_cells.shape,
+        )*self.cells.x1c.unit
+        processed_x2c = np.broadcast_to(
+            self.cells.x2c, 
+            output_cells.shape,
+        )*self.cells.x2c.unit
+        processed_cells = CellCenters3D(
+            x1c=processed_x1c,
+            x2c=processed_x2c,
+            x3c=output_cells.x3c,
+            geometry=output_cells.geometry,
+        )
+        return replace(
+            self,
+            cells=processed_cells,
+            data=processed_data,
+        )
 
-    def reconstruct_spatial_distribution(self, *, config:dict) -> dict[str,FArrayND]:
-        match self.mode, self.value:
-            case "unset", "unset":
-                raise NotImplementedError("mode='unset' not yet implemented.")
-                # TODO deal with config dict processing array
-                directory = config["TODO"]
-                pmodel = pread.read_prodimo(directory)
-                X, Z = (pmodel.x, pmodel.z)
-                distribution = pmodel.nmol[:,:,pmodel.spnames[self.species]]
-                # TODO
-                # convert distribution+coords to Array
-                # process array
-                if distribution.shape!=self.ngas.shape:
-                    raise ValueError(
-                        f"number density of species and ngas do not have the same shape: {distribution.shape}!={self.ngas.shape}."/
-                        "Try to perform some array processing."
-                    )
-            case "array", "unset":
-                raise NotImplementedError("mode='array' not yet implemented.")
-                # TODO deal with config dict processing array
-                directory = config["TODO"]
-                pmodel = pread.read_prodimo(directory)
-                X, Z = (pmodel.x, pmodel.z)
-                abundance = pmodel.getAbun(self.species)
-                # TODO
-                # convert abundance+coords to Array
-                # process array
-                if abundance.shape!=self.ngas.shape:
-                    raise ValueError(
-                        f"abundance and ngas do not have the same shape: {abundance.shape}!={self.ngas.shape}."/
-                        "Try to perform some array processing."
-                    )
-                distribution = abundance*self.ngas
-            case "constant", float:
-                abundance = self.value
-                distribution = abundance*self.ngas
-            case _ as unreachable:
-                assert_never(unreachable)
-        return distribution
+    def mirror_symmetry(self, output_cells:"CellCenters3D") -> "Array":
+        if output_cells.geometry!="spherical":
+            raise NotImplementedError(f"Grid geometry={output_cells.geometry} should be 'spherical'.")
+        #TODO: add raise condition if mirror_symmetry not applicable
+        processed_data = np.concatenate(
+            [
+                self.data,
+                np.flip(self.data, axis=1),
+            ],
+            axis=1,
+        )
+        ntheta = output_cells.shape[1]
+        processed_x1c = np.concatenate(
+            [
+                self.cells.x1c,
+                np.atleast_3d(output_cells.x1c[:,ntheta//2:ntheta,0])
+            ],
+            axis=1,
+        )
+        processed_x3c = np.concatenate(
+            [
+                self.cells.x3c,
+                np.atleast_3d(output_cells.x3c[:,ntheta//2:ntheta,0])
+            ],
+            axis=1,
+        )
+
+        processed_cells = CellCenters3D(
+            x1c=processed_x1c,
+            x2c=np.atleast_3d(output_cells.x2c[:,:,0]),
+            x3c=processed_x3c,
+            geometry=output_cells.geometry,
+        )
+        if processed_data.shape!=processed_cells.shape:
+            raise ValueError(
+                f"There is a discrepancy between the data shape: {processed_data.shape}, and the grid shape: {processed_cells.shape}."
+            )
+        return replace(
+            self,
+            cells=processed_cells,
+            data=processed_data,
+        )
+    
+    def remove_nan(self) -> "Array":
+        processed_data = np.nan_to_num(self.data, nan=np.nanmin(self.data))
+        return replace(
+            self,
+            data=processed_data,
+        )
+
+    def smooth_gaussian_filter(self) -> "Array":
+        processed_data = gaussian_filter(self.data, sigma=1)*self.data.unit
+        return replace(
+            self,
+            data=processed_data,
+        )
+
+    def from_prodimo_to(self, output_cells:"CellCenters3D") -> "Array":
+        #TODO: all operations in one --> lot of work that can't be used anyway
+        interpolated_array = self.interpolate_on_half_spherical_disk(output_cells=output_cells)
+        mirrored_array = interpolated_array.mirror_symmetry(output_cells=output_cells)
+        phi_expanded_array = mirrored_array.phi_expansion(output_cells=output_cells)
+        no_nan_array = phi_expanded_array.remove_nan()
+        smoothed_array = no_nan_array.smooth_gaussian_filter()
+        array = smoothed_array
+        return replace(
+            self,
+            cells=output_cells,
+            data=array.data,
+        )
 
 @dataclass(kw_only=True, slots=True, frozen=True)
 class Grid:
     x1: FArray1D[u.Quantity]
     x2: FArray1D[u.Quantity]
     x3: FArray1D[u.Quantity]
+    geometry: Geometry    
 
     @property
     def x1c(self) -> FArray1D[u.Quantity]:
@@ -121,6 +224,16 @@ class Grid:
     def shape(self):
         return (self.x1c.shape[0], self.x2c.shape[0], self.x3c.shape[0])
 
+    @property
+    def cell_centers_3d(self) -> "CellCenters3D":
+        x1c_3d, x2c_3d, x3c_3d = np.meshgrid(self.x1c, self.x2c, self.x3c, indexing="ij")
+        return CellCenters3D(
+            x1c=x1c_3d,
+            x2c=x2c_3d,
+            x3c=x3c_3d,
+            geometry=self.geometry,
+        )
+
 @dataclass(kw_only=True, slots=True, frozen=True)
 class Dust:
     rho: FArrayND[u.Quantity]
@@ -136,6 +249,13 @@ class Gas:
     @property
     def velocity(self):
         return np.stack((self.v1, self.v2, self.v3), axis=0)
+
+    def nH2(self, config:dict):
+        MUSTAR = config["stars"]["mu_star"]
+        numberrho_H2 = self.rho/(MUSTAR*uc.m_p.to(u.g))
+        if numberrho_H2.unit!=1/u.cm**3:
+            raise ValueError(f"number density unit should be 1/cm^3, not {numberrho_H2.unit}.")
+        return numberrho_H2
 
 #TODO: Opacity to be improved
 @dataclass(kw_only=True, slots=True)
@@ -163,7 +283,7 @@ class Opacity:
                     f"Optical constants should be ordered by monotonically increasing lambda"
                 )
             if list(set_lambda)[0]==-1:
-                print("INFO: lambda is monotically decreasing. Reversing optical constants arrays.")
+                print("WARNING: lambda is monotically decreasing. Reversing optical constants arrays.")
                 value_dict = vars(self.value)
                 for key in ("_l","_n","_k","_ll","_ln","_lk"):
                     value_dict[key] = value_dict[key][::-1]
@@ -211,15 +331,14 @@ class Model:
     unit_length_au:float
     unit_mass_msun:float
     component:str
-    geometry:Geometry
 
     @property
-    def dimension(self):
-        return (3-self.grid.shape.count(1))
+    def dimension(self) -> int:
+        return int(3-self.grid.shape.count(1))
 
     @property
     def axes_from_geometry(self):
-        return axes_from_geometry(self.geometry)
+        return axes_from_geometry(self.grid.geometry)
 
     @property
     def _indices_of_reduced_axes(self):
@@ -237,6 +356,189 @@ class Model:
             return tuple(np.array(self.axes_from_geometry[self._indices_of_reduced_axes]))
         else:
             return (None,)
+
+    def temperature(self, config:dict) -> "Array":
+        if "gas" not in self.component:
+            raise ValueError(
+                "temperature method is defined if there is a gas component."
+            )
+        config_gas = config["gas"]
+        if temperature_dict:=config_gas["temperature"]:
+            mode = temperature_dict["mode"]
+        else:
+            raise ValueError(
+                "Undefined treatment of temperature. Either use 'tgas_eq_tdust = 1' in radmc3d.inp, or provide 'temperature' in the gas section."
+            )
+        match mode:
+            case "array":
+                if "processing" not in config["gas"]:
+                    raise ValueError(
+                        f"'processing' has to be provided in the gas section in order to retrieve the temperature array from prodimo."
+                    )
+                processing_dict = np.atleast_1d(config["gas"]["processing"]).tolist()
+                processing_category = [d.get("mode") for d in processing_dict]
+                if len(processing_category)!=1 and "prodimo" not in processing_category:
+                    raise NotImplementedError(
+                        f"For now, we can only retrieve temperature array with prodimo mode. No other mode is implemented yet."
+                    )
+                if "prodimo_dir" not in processing_dict[0]:
+                    raise ValueError(
+                        f"'prodimo_dir' should be provided, when using mode='prodimo'."
+                    ) 
+                prodimo_directory = processing_dict[0]["prodimo_dir"]
+                pmodel = pread.read_prodimo(prodimo_directory)
+
+                x_2d, z_2d = ((pmodel.x*u.au).to(u.cm), (pmodel.z*u.au).to(u.cm))
+
+                x_3d = np.atleast_3d(x_2d)
+                z_3d = np.atleast_3d(z_2d)
+                pcyl_3d = np.zeros_like(x_3d.value)*u.radian
+
+                temperature = Array(
+                    cells=CellCenters3D(
+                        x1c=x_3d,
+                        x2c=z_3d,
+                        x3c=pcyl_3d,
+                        geometry=Geometry("polar"),
+                    ),
+                    data=np.atleast_3d(pmodel.tg)*u.K,
+                    config=config,
+                )
+                temperature = temperature.from_prodimo_to(output_cells=self.grid.cell_centers_3d)
+                if temperature.data.shape!=self.gas.rho.shape:
+                    raise ValueError(
+                        f"temperature and gas density do not have the same shape: {temperature.data.shape}!={self.gas.rho.shape}. "\
+                        "Try to perform some array processing."
+                    )
+                if temperature.data.unit!=u.K:
+                    raise ValueError(f"temperature unit should be K, not {temperature.data.unit}.")
+
+            case _ as unreachable:
+                assert_never(unreachable)
+        return temperature
+
+    def number_density(self, config:dict) -> "Array":
+        if "gas" not in self.component:
+            raise ValueError(
+                "number_density method is defined if there is a gas component."
+            )
+        config_gas = config["gas"]
+        species = config_gas["species"]
+        abundance = config_gas["abundance"]
+        mode = abundance["mode"]
+        value = abundance["value"]
+
+        match mode, value:
+            case "unset", "unset":
+                if "processing" not in config["gas"]:
+                    raise ValueError(
+                        f"'processing' has to be provided in the gas section in order to retrieve the number density array from prodimo."
+                    )
+                processing_dict = np.atleast_1d(config["gas"]["processing"]).tolist()
+                processing_category = [d.get("mode") for d in processing_dict]
+                if len(processing_category)!=1 and "prodimo" not in processing_category:
+                    raise NotImplementedError(
+                        f"For now, we can only retrieve number density array with prodimo mode. No other mode is implemented yet."
+                    )
+                if "prodimo_dir" not in processing_dict[0]:
+                    raise ValueError(
+                        f"'prodimo_dir' should be provided, when using mode='prodimo'."
+                    ) 
+                prodimo_directory = processing_dict[0]["prodimo_dir"]
+                pmodel = pread.read_prodimo(prodimo_directory)
+
+                x_2d, z_2d = ((pmodel.x*u.au).to(u.cm), (pmodel.z*u.au).to(u.cm))
+
+                x_3d = np.atleast_3d(x_2d)
+                z_3d = np.atleast_3d(z_2d)
+                pcyl_3d = np.zeros_like(x_3d.value)*u.radian
+
+                distribution = Array(
+                    cells=CellCenters3D(
+                        x1c=x_3d,
+                        x2c=z_3d,
+                        x3c=pcyl_3d,
+                        geometry=Geometry("polar"),
+                    ),
+                    data=np.atleast_3d(pmodel.nmol[:,:,pmodel.spnames[species.upper()]])*(1/u.cm**3),
+                    config=config,
+                )
+                distribution = distribution.from_prodimo_to(output_cells=self.grid.cell_centers_3d)
+                nH2 = self.gas.nH2(config=config)
+                if distribution.data.shape!=nH2.shape:
+                    raise ValueError(
+                        f"number density of species and nH2 do not have the same shape: {distribution.data.shape}!={nH2.shape}. "\
+                        "Try to perform some array processing."
+                    )
+                if distribution.data.unit!=1/u.cm**3:
+                    raise ValueError(f"number density unit should be 1/cm^3, not {distribution.data.unit}.")
+
+            case "array", "unset":
+                if "processing" not in config["gas"]:
+                    raise ValueError(
+                        f"'processing' has to be provided in the gas section in order to retrieve the number density array from prodimo."
+                    )
+                processing_dict = np.atleast_1d(config["gas"]["processing"]).tolist()
+                processing_category = [d.get("mode") for d in processing_dict]
+                if len(processing_category)!=1 and "prodimo" not in processing_category:
+                    raise NotImplementedError(
+                        f"For now, we can only retrieve number density array with prodimo mode. No other mode is implemented yet."
+                    )
+                if "prodimo_dir" not in processing_dict[0]:
+                    raise ValueError(
+                        f"'prodimo_dir' should be provided, when using mode='prodimo'."
+                    ) 
+                prodimo_directory = processing_dict[0]["prodimo_dir"]
+                pmodel = pread.read_prodimo(prodimo_directory)
+
+                x_2d, z_2d = ((pmodel.x*u.au).to(u.cm), (pmodel.z*u.au).to(u.cm))
+
+                x_3d = np.atleast_3d(x_2d)
+                z_3d = np.atleast_3d(z_2d)
+                pcyl_3d = np.zeros_like(x_3d.value)*u.radian
+
+                abundance = Array(
+                    cells=CellCenters3D(
+                        x1c=x_3d,
+                        x2c=z_3d,
+                        x3c=pcyl_3d,
+                        geometry=Geometry("polar"),
+                    ),
+                    data=np.atleast_3d(pmodel.getAbun(species.upper()))*u.dimensionless_unscaled,
+                    config=config,
+                )
+                abundance = abundance.from_prodimo_to(output_cells=self.grid.cell_centers_3d)
+                nH2 = self.gas.nH2(config=config)
+                if abundance.data.shape!=nH2.shape:
+                    raise ValueError(
+                        f"abundance and nH2 do not have the same shape: {abundance.data.shape}!={nH2.shape}. "\
+                        "Try to perform some array processing."
+                    )
+                distribution = Array(
+                    cells=abundance.cells,
+                    data=abundance.data*nH2,
+                    config=config,
+                )
+                if distribution.data.unit!=1/u.cm**3:
+                    raise ValueError(f"number density unit should be 1/cm^3, not {distribution.data.unit}.")
+
+            case "constant", float:
+                abundance = value
+                nH2 = self.gas.nH2(config=config)
+
+                distribution = Array(
+                    cells=CellCenters3D(
+                        x1c=self.grid.cell_centers_3d.x1c,
+                        x2c=self.grid.cell_centers_3d.x2c,
+                        x3c=self.grid.cell_centers_3d.x3c,
+                        geometry=self.grid.cell_centers_3d.geometry,
+                    ),
+                    data=abundance*nH2,
+                    config=config,
+                )
+            case _ as unreachable:
+                assert_never(unreachable)
+        return distribution
 
     def write_files(
         self, 
@@ -286,6 +588,11 @@ class Model:
                 config=config
             )
             self._write_gas_velocity_inp(directory=directory)
+            if config["gas"]["temperature"]:
+                self._write_gastemperature_inp(
+                    directory=directory, 
+                    config=config
+                )
 
     def _write_radmc3d_inp(self, *, directory:str, config:dict):
         """
@@ -660,21 +967,8 @@ class Model:
         directory : str
             Data directory in which the files are written.
         """
-        config_gas = config["gas"]
-        species = config_gas["species"]
-        number_density = config_gas["number_density"]
-        abundance = number_density["abundance"]
-        MUSTAR = config["stars"]["mu_star"]
-        numberrho_H2 = self.gas.rho/(MUSTAR*uc.m_p.to(u.g))
-        if numberrho_H2.unit!=1/u.cm**3:
-            raise ValueError(f"gas rho field unit should be 1/cm^3, not {numberrho_H2.unit}.")
-        number_density_object = NumberDensity(
-            species=species,
-            mode=abundance["mode"],
-            value=abundance["value"],
-            ngas=numberrho_H2,
-        )
-        numberrho = number_density_object.reconstruct_spatial_distribution(config=config)
+        species = config["gas"]["species"]
+        numberrho = self.number_density(config=config).data
 
         filename = f"numberdens_{species}.binp"
         path = os.path.join(directory, filename)
@@ -684,8 +978,6 @@ class Model:
             header = np.array([1, 8, numberrho.flatten().shape[0]], dtype=int)
             header.tofile(f)
             numberrho.ravel(order="F").value.tofile(f)
-            # for ngrho in numberrho.ravel(order="F"):
-            #     f.write(f"{ngrho.value:.6e}\n".encode("utf-8"))
         print("done.")
 
     def _write_gas_velocity_inp(self, *, directory:str):
@@ -707,12 +999,27 @@ class Model:
             header = np.array([1, 8, self.gas.v1.flatten().shape[0]], dtype=int)
             header.tofile(f)
             self.gas.velocity.ravel(order="F").value.tofile(f)
-            # for gasv1, gasv2, gasv3 in zip(self.gas.v1.ravel(order="F"), self.gas.v2.ravel(order="F"), self.gas.v3.ravel(order="F")):
-            #     f.write((
-            #         f"{gasv1.value:.6e} "\
-            #         f"{gasv2.value:.6e} "\
-            #         f"{gasv3.value:.6e}\n").encode("utf-8")
-            #     )
+        print("done.")
+
+    def _write_gastemperature_inp(self, *, directory:str, config:dict):
+        """
+        Function writes the 'gas_temperature.inp' input file.
+
+        Parameters
+        ----------
+        directory : str
+            Data directory in which the files are written.
+        """
+        temperature = self.temperature(config=config).data
+
+        filename = f"gas_temperature.binp"
+        path = os.path.join(directory, filename)
+
+        print(f"INFO: Writing {path}.....", end="")
+        with open(path, "wb") as f:
+            header = np.array([1, 8, temperature.flatten().shape[0]], dtype=int)
+            header.tofile(f)
+            temperature.ravel(order="F").value.tofile(f)
         print("done.")
 
     def _write_amr_grid_inp(self, *, directory:str):
@@ -727,8 +1034,8 @@ class Model:
         """
 
         filename = "amr_grid.inp"
-        if self.geometry!="spherical":
-            raise NotImplementedError(f"Model geometry={self.geometry} should be 'spherical'.")
+        if self.grid.geometry!="spherical":
+            raise NotImplementedError(f"Grid geometry={self.grid.geometry} should be 'spherical'.")
         if self.grid.x1.unit!=u.cm:
             raise ValueError(f"radial coordinate unit should be cm, not {self.grid.x1.unit}.")
         path = os.path.join(directory, filename)
@@ -776,8 +1083,6 @@ class Model:
             header = np.array([1, 8, self.dust.rho[..., 0].flatten().shape[0], self.dust.size.shape[0]], dtype=int)
             header.tofile(f)
             self.dust.rho.ravel(order="F").value.tofile(f)
-            # for dustrho in self.dust.rho.ravel(order="F"):
-            #     f.write(f"{dustrho.value:.6e}\n".encode("utf-8"))
         print("done.")
 
 def load_model(
@@ -797,6 +1102,5 @@ def load_model(
         unit_length_au=unit_length_au,
         unit_mass_msun=unit_mass_msun,
         component=component,
-        geometry=Geometry("spherical")
     )
     return model

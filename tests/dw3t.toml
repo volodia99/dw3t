@@ -30,8 +30,6 @@ T_star                  = 7000.0                                                
 
 [gas]                                                                                                       #necessary_if_gas
 species                 = "co"                                                                              
-
-[gas.number_density]
 abundance               = {
     mode="constant",
     value=1e-4,

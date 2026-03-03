@@ -48,7 +48,7 @@ def main(argv: list[str] | None = None) -> int:
             f"expecting {expected_length_mandatory} mandatory parameters, not {len(MANDATORY_SET)}."
         )
     if "gas" in config_file_layer["simulation"]["component"]:
-        MANDATORY_SET.update(["species", "number_density"])
+        MANDATORY_SET.update(["species"])
     if "dust" in config_file_layer["simulation"]["component"]:
         MANDATORY_SET.update(["opacity"])
     # ensures that all mandatory parameters are defined in toml file
@@ -137,7 +137,7 @@ def main(argv: list[str] | None = None) -> int:
         opacity = None
 
     if "gas" in config["simulation"]["component"]:
-        abundance_dict = config["gas"]["number_density"]["abundance"]
+        abundance_dict = config["gas"]["abundance"]
         if abundance_dict["mode"] not in ("constant", "array", "unset"):
             raise ValueError(f"abundance.mode = {abundance_dict["mode"]}. Should be 'constant', 'array' or 'unset'.")
 

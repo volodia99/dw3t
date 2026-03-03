@@ -8,6 +8,5 @@ def processing(*, model:"Model", kwargs:dict) -> "Model":
         unit_length_au=model.unit_length_au,
         unit_mass_msun=model.unit_mass_msun,
         component=model.component,
-        geometry=model.geometry,
     )
     return model
