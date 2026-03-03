@@ -1,0 +1,77 @@
+name: CI
+on:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  # auto-cancel any in-progress job *on the same branch*
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Source
+      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+    - uses: astral-sh/setup-uv@681c641aba71e4a1c380be3ab5e12ad51f415867 # v7.1.6
+    - run: uv build
+
+  unit-tests:
+    strategy:
+      matrix:
+        python-version:
+        - '3.13'
+        - '3.14'
+        include:
+        - os: ubuntu-22.04
+          python-version: '3.10'
+          install-args: --resolution=lowest
+
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Source
+      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+    - uses: astral-sh/setup-uv@681c641aba71e4a1c380be3ab5e12ad51f415867 # v7.1.6
+      with:
+        python-version: ${{ matrix.python-version }}
+        prune-cache: false
+        cache-suffix: ${{ matrix.install-args }}
+
+    - name: Build
+      run: uv sync --group test --group covcheck ${{ matrix.install-args }}
+
+    - name: Test
+      run: |
+        uv run --no-sync coverage run --parallel-mode -m \
+          pytest --color=yes ${{ contains(matrix.install-args, 'lowest') && '-Wdefault' || '' }}
+
+    - name: Upload coverage data
+      uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+      with:
+        path: .coverage.*
+        name: lick_coverage_data-${{ matrix.python-version }}${{ matrix.install-args }}
+        if-no-files-found: error
+        include-hidden-files: true
+
+  platform-tests:
+    strategy:
+      matrix:
+        os:
+        - macos-latest
+        - windows-latest
+
+    runs-on: ${{ matrix.os }}
+    steps:
+    - name: Checkout Source
+      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+    - uses: astral-sh/setup-uv@681c641aba71e4a1c380be3ab5e12ad51f415867 # v7.1.6
+      with:
+        python-version: '3.14'
+        prune-cache: false
+
+    - name: Build
+      run: uv sync --group test --no-editable
+
+    - name: Test
+      run: uv run --no-sync pytest --color=yes
