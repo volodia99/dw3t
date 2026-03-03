@@ -177,6 +177,7 @@ dependencies = [
     { name = "nonos" },
     { name = "numpy" },
     { name = "prodimopy" },
+    { name = "scipy" },
     { name = "tomli", marker = "python_full_version < '3.15'" },
     { name = "tomli-w" },
 ]
@@ -195,6 +196,7 @@ requires-dist = [
     { name = "nonos", specifier = ">=0.19.1" },
     { name = "numpy", specifier = ">=2.4.0" },
     { name = "prodimopy", specifier = ">=2.5.2" },
+    { name = "scipy", specifier = ">=1.16.3" },
     { name = "tomli", marker = "python_full_version < '3.15'", specifier = ">=2.4.0" },
     { name = "tomli-w", specifier = ">=1.2.0" },
 ]
