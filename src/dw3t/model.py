@@ -269,7 +269,7 @@ class Gas:
 class Opacity:
     mix:dict
     rho:float|None=None
-    value:str=field(init=False) # not always a string, can be instance of do.diel_const
+    value:Any=field(init=False) # not always a string, can be instance of do.diel_const
 
     def __post_init__(self):
         if self.mix["mode"]=="file":
