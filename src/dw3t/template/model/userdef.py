@@ -1,4 +1,5 @@
 import os
+from dataclasses import replace
 
 import numpy as np
 import astropy.units as u
@@ -24,16 +25,14 @@ def processing(*, model:"Model", kwargs:dict) -> "Model":
     UNIT_DENSITY = unit_mass_msun / unit_length_au**3
     UNIT_VELOCITY = np.sqrt(uc.G*unit_mass_msun/unit_length_au).to(u.m/u.s)
 
-    model = Model(
+    model = replace(
+        model,
         grid=Grid(
             x1=((ds.coords.get_axis_array("r") * unit_length_au).to(u.cm)),#.value,
             x2=ds.coords.get_axis_array("theta") * u.radian,
             x3=ds.coords.get_axis_array("phi") * u.radian,
             geometry=ds.native_geometry,
         ),
-        unit_length_au=unit_length_au,
-        unit_mass_msun=unit_mass_msun,
-        component=model.component,
     )
 
     nphi = 128
@@ -75,17 +74,12 @@ def processing(*, model:"Model", kwargs:dict) -> "Model":
             size = dustSize,
         )
 
-    model = Model(
-        grid=Grid(
-            x1=model.grid.x1,
-            x2=model.grid.x2,
+    return replace(
+        model,
+        grid=replace(
+            model.grid,
             x3=phi,
-            geometry=model.grid.geometry
         ),
         gas=gas,
         dust=dust,
-        unit_length_au=model.unit_length_au,
-        unit_mass_msun=model.unit_mass_msun,
-        component=model.component,
     )
-    return model

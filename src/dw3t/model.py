@@ -43,7 +43,7 @@ class CellCenters3D:
     def shape(self):
         return self.x1c.shape
 
-@dataclass(slots=True, frozen=True, kw_only=True)
+@dataclass(kw_only=True, slots=True, frozen=True)
 class Array:
     cells:CellCenters3D
     data:FArrayND
@@ -330,7 +330,7 @@ class Opacity:
                 f"Unknown mode for dust opacity mix: {self.mix['mode']}. Should be 'file' or 'dsharp_opac'."
             )        
 
-@dataclass(kw_only=True, slots=True)
+@dataclass(kw_only=True, slots=True, frozen=True)
 class Model:
     grid:Grid|None=None
     dust:Dust|None=None
