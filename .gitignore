@@ -1,0 +1,10 @@
+# tmp files
+*~
+
+#
+*.egg-info
+__pycache__
+htmlcov
+.hypothesis
+.coverage*
+tmp/*
