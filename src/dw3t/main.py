@@ -76,7 +76,9 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     if "processing" in config["simulation"]:
-        processing_dict = np.atleast_1d(config["simulation"]["processing"]).tolist()
+        processing_dict = config["simulation"]["processing"]
+        if not isinstance(processing_dict, list):
+            processing_dict = [processing_dict]
         processing_category = [d.get("mode") for d in processing_dict]
         if "userdef" in processing_category:
             if len(processing_category)!=1:
