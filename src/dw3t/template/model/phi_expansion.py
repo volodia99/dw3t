@@ -1,3 +1,5 @@
+from dataclasses import replace
+
 import numpy as np
 import astropy.units as u
 
@@ -38,9 +40,9 @@ def processing(*, model:"Model", kwargs:dict) -> "Model":
             size = model.dust.size,
         )
 
-    updated_model = model
-    updated_model.grid = grid
-    updated_model.gas = gas
-    updated_model.dust = dust
-    
-    return updated_model
+    return replace(
+        model,
+        grid=grid,
+        gas=gas,
+        dust=dust,
+    )
