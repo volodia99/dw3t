@@ -341,26 +341,38 @@ class Model:
 
     @property
     def dimension(self) -> int:
+        if self.grid is None:
+            raise ValueError(
+                "grid is not defined."
+            )
         return int(3-self.grid.shape.count(1))
 
     @property
     def axes_from_geometry(self):
+        if self.grid is None:
+            raise ValueError(
+                "grid is not defined."
+            )
         return axes_from_geometry(self.grid.geometry)
 
     @property
     def _indices_of_reduced_axes(self):
-        if self.axes_from_geometry.count(1) == 0:
+        if self.grid is None:
+            raise ValueError(
+                "grid is not defined."
+            )
+        if self.grid.shape.count(1) == 0:
             indices = None
-        elif self.axes_from_geometry.count(1) == 1:
-            indices = self.axes_from_geometry.index(1)
-        elif self.axes_from_geometry.count(1) > 1:
-            indices = [i for i, x in enumerate(self.axes_from_geometry) if x == 1]
+        elif self.grid.shape.count(1) == 1:
+            indices = self.grid.shape.index(1)
+        elif self.grid.shape.count(1) > 1:
+            indices = [i for i, x in enumerate(self.grid.shape) if x == 1]
         return(np.atleast_1d(indices))
 
     @property
     def reduced_axes(self):
         if None not in self._indices_of_reduced_axes:
-            return tuple(np.array(self.axes_from_geometry[self._indices_of_reduced_axes]))
+            return tuple(np.array(self.axes_from_geometry)[self._indices_of_reduced_axes])
         else:
             return (None,)
 

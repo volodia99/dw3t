@@ -12,7 +12,7 @@ def processing(*, model:"Model", kwargs:dict) -> "Model":
         raise ValueError(f"phi_expansion works in 2D, model is {model.dimension}D.")
     if model.grid.geometry!="spherical":
         raise ValueError(f"phi_expansion works if the model geometry is spherical.")
-    if Axis.AZIMUTH in model.reduced_axes:
+    if Axis.AZIMUTH not in model.reduced_axes:
         raise ValueError(f"phi_expansion works if there is ONE cell only in the azimuthal direction.")
 
     nphi = kwargs["nphi"]
