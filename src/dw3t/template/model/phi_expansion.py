@@ -3,7 +3,7 @@ from dataclasses import replace
 import numpy as np
 import astropy.units as u
 
-from dw3t.model import Model, Grid, Gas, Dust
+from dw3t.model import Model
 from nonos._geometry import Axis
 
 def processing(*, model:"Model", kwargs:dict) -> "Model":
@@ -18,24 +18,29 @@ def processing(*, model:"Model", kwargs:dict) -> "Model":
     nphi = kwargs["nphi"]
     phi = np.linspace(0, 2.*np.pi, nphi+1) * u.radian
 
-    grid=Grid(
+    grid = model.grid
+    gas = model.gas
+    dust = model.dust
+
+    grid = replace(
+        grid,
         x1=model.grid.x1,
         x2=model.grid.x2,
         x3=phi,
         geometry=model.grid.geometry,
     )
 
-    gas = None
-    dust = None
     if "gas" in model.component:
-        gas = Gas(
+        gas = replace(
+            gas,
             rho = np.repeat(model.gas.rho, nphi, axis=2),
             v1 = np.repeat(model.gas.v1, nphi, axis=2),
             v2 = np.repeat(model.gas.v2, nphi, axis=2),
             v3 = np.repeat(model.gas.v3, nphi, axis=2),
         )
     if "dust" in model.component:
-        dust = Dust(
+        dust = replace(
+            dust,
             rho = np.repeat(model.dust.rho, nphi, axis=2),
             size = model.dust.size,
         )
