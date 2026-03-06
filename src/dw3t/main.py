@@ -7,6 +7,7 @@ from pathlib import Path
 import numpy as np
 
 import tomli_w
+from nonos._geometry import Axis
 from deep_chainmap import DeepChainMap
 
 from dw3t.model import load_model, Opacity
@@ -126,8 +127,8 @@ def main(argv: list[str] | None = None) -> int:
             f"at least one mandatory parameter is missing: {MANDATORY_SET.difference(set(list_of_middle_keys(config_file_layer)))}"
         )
 
-    if model.dimension!=3:
-        raise ValueError(f"{model.dimension=}D, should be 3D for RADMC3D. Try to post-process the data for it to be 3D.")
+    if not((model.dimension==3) | ((model.dimension==2) & (Axis.AZIMUTH in model.reduced_axes))):
+        raise ValueError(f"{model.dimension=}D, should be 3D or 2D axisymmetric for RADMC3D. Try to post-process the data.")
 
     #TODO: test smoothing opacities
     if write_opacities:=("dust" in config["simulation"]["component"]):
