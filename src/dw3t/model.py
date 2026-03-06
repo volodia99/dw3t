@@ -637,7 +637,7 @@ class Model:
 
         # Set up a wavelength grid (in micron) upon which we want to compute the opacities
         config_wavelength_micron = config["wavelength_micron"]
-        lam_grid = np.linspace(config_wavelength_micron["min"],config_wavelength_micron["max"],config_wavelength_micron["N"])*u.micron
+        lam_grid = np.geomspace(config_wavelength_micron["min"],config_wavelength_micron["max"],config_wavelength_micron["N"])*u.micron
         lam_grid = lam_grid.value
         R_star = (config["stars"]["R_star"]*u.R_sun).to(u.cm).value
         M_star = (config["stars"]["M_star"]*u.M_sun).to(u.g).value
@@ -674,7 +674,7 @@ class Model:
         path = os.path.join(directory, filename)
 
         # Set up a wavelength grid (in micron) upon which we want to compute the opacities
-        lam_grid = np.linspace(config["min"],config["max"],config["N"])*u.micron
+        lam_grid = np.geomspace(config["min"],config["max"],config["N"])*u.micron
         lam_grid = lam_grid.value
 
         print(f"INFO: Writing {path}.....", end="")
@@ -839,7 +839,7 @@ class Model:
         #TODO: be more flexible?
         Nangle = 181
         # Set up a wavelength grid (in micron) upon which we want to compute the opacities
-        lam_grid = np.linspace(config["min"],config["max"],config["N"])*u.micron
+        lam_grid = np.geomspace(config["min"],config["max"],config["N"])*u.micron
         Nlam = lam_grid.shape[0]
 
         dustsize = self.dust.size.to(u.cm).value

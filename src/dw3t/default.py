@@ -28,7 +28,7 @@ DEFAULT_LAYER = {
         "mu_star": 1.37,
     },
     "wavelength_micron": {
-        "min": 1,
+        "min": 0.1,
         "max": 10_000,
         "N": 200,
     },
