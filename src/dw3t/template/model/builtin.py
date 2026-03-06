@@ -25,15 +25,17 @@ def processing(*, model:"Model", kwargs:dict) -> "Model":
     UNIT_DENSITY = model.unit_mass_msun / model.unit_length_au**3
     UNIT_VELOCITY = np.sqrt(uc.G*model.unit_mass_msun/model.unit_length_au).to(u.m/u.s)
 
-    grid = Grid(
-            x1=((ds.coords.get_axis_array("r") * model.unit_length_au).to(u.cm)),#.value,
-            x2=ds.coords.get_axis_array("theta") * u.radian,
-            x3=ds.coords.get_axis_array("phi") * u.radian,
-            geometry=ds.native_geometry,
-        )
+    grid = model.grid
+    gas = model.gas
+    dust = model.dust
 
-    gas = None
-    dust = None
+    grid = Grid(
+        x1=((ds.coords.get_axis_array("r") * model.unit_length_au).to(u.cm)),#.value,
+        x2=ds.coords.get_axis_array("theta") * u.radian,
+        x3=ds.coords.get_axis_array("phi") * u.radian,
+        geometry=ds.native_geometry,
+    )
+
     if "gas" in model.component:
         #TODO: add flexibility
         print(f"WARNING: Assuming no omegraframe.")
