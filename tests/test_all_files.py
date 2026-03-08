@@ -1,9 +1,7 @@
 import os
-from pathlib import Path
 import tarfile
 import filecmp
 import shutil
-import pytest
 
 from dw3t.main import main
 
@@ -36,7 +34,6 @@ class TestFileWrite:
         )
         data_dir_radmc3d_ref = test_data_dir / "idefix_1_dust_fluid" / "radmc3d_ref"
         data_dir_radmc3d = test_data_dir / "idefix_1_dust_fluid" / "radmc3d"
-        data_dir_opacities = test_data_dir / "idefix_1_dust_fluid" / "opacities"
 
         main([str(test_data_dir / "dw3t.toml")])
 
