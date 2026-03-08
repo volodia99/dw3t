@@ -114,7 +114,7 @@ def main(argv: list[str] | None = None) -> int:
                 except ModuleNotFoundError:
                     raise ModuleNotFoundError(
                         f"No module named 'template.model.{processing_category[ii]}'."
-                    )
+                    ) from None
         for tm, kw in zip(template_modules, kwargs, strict=True):
             model = tm.processing(model=model, kwargs=kw)
 
