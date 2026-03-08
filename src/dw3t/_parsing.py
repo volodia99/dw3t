@@ -8,8 +8,7 @@ def is_set(x: Any) -> bool:
 
 def list_of_middle_keys(dictionary: dict) -> list:
     list_all_middle_keys = []
-    for key, value in dictionary.items():
+    for value in dictionary.values():
         if isinstance(value, dict):
-            for element in list(value.keys()):
-                list_all_middle_keys.append(element)
+            list_all_middle_keys.extend(value.keys())
     return list_all_middle_keys
