@@ -12,7 +12,6 @@ import astropy.constants as uc
 from scipy.interpolate import griddata
 from scipy.ndimage import gaussian_filter
 
-import inifix
 import dsharp_opac as do
 import prodimopy.read as pread
 
@@ -58,7 +57,7 @@ class Array:
             unit = self.data.unit
         except AttributeError:
             raise AttributeError(
-                f"data should have a unit."
+                "data should have a unit."
             )
 
     def _cart2pol(self, *, x, z):
@@ -281,13 +280,13 @@ class Opacity:
             )
             if not is_set(self.rho):
                 raise ValueError(
-                    f"Internal density of the mix has to be defined. Please provide 'rho' in dust.opacity."
+                    "Internal density of the mix has to be defined. Please provide 'rho' in dust.opacity."
                 )
             self.value.rho = self.rho
             set_lambda = set(np.sign(np.diff(self.value._l)))
             if len(set_lambda)!=1:
                 raise ValueError(
-                    f"Optical constants should be ordered by monotonically increasing lambda"
+                    "Optical constants should be ordered by monotonically increasing lambda"
                 )
             if list(set_lambda)[0]==-1:
                 print("WARNING: lambda is monotically decreasing. Reversing optical constants arrays.")
@@ -392,17 +391,17 @@ class Model:
             case "array":
                 if "processing" not in config["gas"]:
                     raise ValueError(
-                        f"'processing' has to be provided in the gas section in order to retrieve the temperature array from prodimo."
+                        "'processing' has to be provided in the gas section in order to retrieve the temperature array from prodimo."
                     )
                 processing_dict = np.atleast_1d(config["gas"]["processing"]).tolist()
                 processing_category = [d.get("mode") for d in processing_dict]
                 if len(processing_category)!=1 and "prodimo" not in processing_category:
                     raise NotImplementedError(
-                        f"For now, we can only retrieve temperature array with prodimo mode. No other mode is implemented yet."
+                        "For now, we can only retrieve temperature array with prodimo mode. No other mode is implemented yet."
                     )
                 if "prodimo_dir" not in processing_dict[0]:
                     raise ValueError(
-                        f"'prodimo_dir' should be provided, when using mode='prodimo'."
+                        "'prodimo_dir' should be provided, when using mode='prodimo'."
                     ) 
                 prodimo_directory = processing_dict[0]["prodimo_dir"]
                 pmodel = pread.read_prodimo(prodimo_directory)
@@ -451,17 +450,17 @@ class Model:
             case "unset", "unset":
                 if "processing" not in config["gas"]:
                     raise ValueError(
-                        f"'processing' has to be provided in the gas section in order to retrieve the number density array from prodimo."
+                        "'processing' has to be provided in the gas section in order to retrieve the number density array from prodimo."
                     )
                 processing_dict = np.atleast_1d(config["gas"]["processing"]).tolist()
                 processing_category = [d.get("mode") for d in processing_dict]
                 if len(processing_category)!=1 and "prodimo" not in processing_category:
                     raise NotImplementedError(
-                        f"For now, we can only retrieve number density array with prodimo mode. No other mode is implemented yet."
+                        "For now, we can only retrieve number density array with prodimo mode. No other mode is implemented yet."
                     )
                 if "prodimo_dir" not in processing_dict[0]:
                     raise ValueError(
-                        f"'prodimo_dir' should be provided, when using mode='prodimo'."
+                        "'prodimo_dir' should be provided, when using mode='prodimo'."
                     ) 
                 prodimo_directory = processing_dict[0]["prodimo_dir"]
                 pmodel = pread.read_prodimo(prodimo_directory)
@@ -495,17 +494,17 @@ class Model:
             case "array", "unset":
                 if "processing" not in config["gas"]:
                     raise ValueError(
-                        f"'processing' has to be provided in the gas section in order to retrieve the number density array from prodimo."
+                        "'processing' has to be provided in the gas section in order to retrieve the number density array from prodimo."
                     )
                 processing_dict = np.atleast_1d(config["gas"]["processing"]).tolist()
                 processing_category = [d.get("mode") for d in processing_dict]
                 if len(processing_category)!=1 and "prodimo" not in processing_category:
                     raise NotImplementedError(
-                        f"For now, we can only retrieve number density array with prodimo mode. No other mode is implemented yet."
+                        "For now, we can only retrieve number density array with prodimo mode. No other mode is implemented yet."
                     )
                 if "prodimo_dir" not in processing_dict[0]:
                     raise ValueError(
-                        f"'prodimo_dir' should be provided, when using mode='prodimo'."
+                        "'prodimo_dir' should be provided, when using mode='prodimo'."
                     ) 
                 prodimo_directory = processing_dict[0]["prodimo_dir"]
                 pmodel = pread.read_prodimo(prodimo_directory)
@@ -581,7 +580,7 @@ class Model:
         """
         Path(directory).mkdir(parents=True, exist_ok=False)
         if simulation_files_only:
-            print(f"WARNING: for now writing only the input files related to simulated outputs, "\
+            print("WARNING: for now writing only the input files related to simulated outputs, "\
             "refer to the RADMC3D documentation to write the mandatory files related to RADMC3D.")
         elif not simulation_files_only:
             self._write_radmc3d_inp(directory=directory, config=config["radmc3d"])
@@ -1031,7 +1030,7 @@ class Model:
         """
         temperature = self.temperature(config=config).data
 
-        filename = f"gas_temperature.binp"
+        filename = "gas_temperature.binp"
         path = os.path.join(directory, filename)
 
         print(f"INFO: Writing {path}.....", end="")

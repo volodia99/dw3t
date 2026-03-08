@@ -11,9 +11,9 @@ def processing(*, model:"Model", kwargs:dict) -> "Model":
     if model.dimension!=2:
         raise ValueError(f"phi_expansion works in 2D, model is {model.dimension}D.")
     if model.grid.geometry!="spherical":
-        raise ValueError(f"phi_expansion works if the model geometry is spherical.")
+        raise ValueError("phi_expansion works if the model geometry is spherical.")
     if Axis.AZIMUTH not in model.reduced_axes:
-        raise ValueError(f"phi_expansion works if there is ONE cell only in the azimuthal direction.")
+        raise ValueError("phi_expansion works if there is ONE cell only in the azimuthal direction.")
 
     nphi = kwargs["nphi"]
     phi = np.linspace(0, 2.*np.pi, nphi+1) * u.radian
