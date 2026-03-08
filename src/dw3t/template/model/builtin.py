@@ -66,7 +66,7 @@ def processing(*, model:"Model", kwargs:dict) -> "Model":
             unit_mass_msun=model.unit_mass_msun,
             )#.value
         dustSize_ascending_indices = np.argsort(dustSize)
-        dustrho = np.empty(grid.shape+(len(dustSize),))
+        dustrho = np.empty((*grid.shape, len(dustSize)))
         for kk in dustSize_ascending_indices:
             dustrho[..., kk] = ds[f"DUST{kk}_RHO"].data
         dust = Dust(
