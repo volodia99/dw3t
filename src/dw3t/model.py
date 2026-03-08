@@ -53,9 +53,7 @@ class Array:
             raise ValueError(
                 f"{self.cells.shape=} should be equal to {self.data.shape=}"
             )
-        try:
-            unit = self.data.unit
-        except AttributeError:
+        if not hasattr(self.data, "unit"):
             raise AttributeError(
                 "data should have a unit."
             )
@@ -76,7 +74,7 @@ class Array:
 
         x_3d = np.flip(self.cells.x1c, axis=1)
         z_3d = np.flip(self.cells.x2c, axis=1)
-        phi_3d = np.flip(self.cells.x3c, axis=1)
+
         data_species = np.flip(self.data, axis=1)
         r_3d, theta_3d = self._cart2pol(
             x=x_3d,
