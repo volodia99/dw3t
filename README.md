@@ -154,7 +154,10 @@ processing = [
     {mode="prodimo", prodimo_dir="path_to_prodimo_model_directory"},
 ]
 ```
-In that example, the CO number density is retrieved from a 2D (prodimo)[https://prodimo.iwf.oeaw.ac.at] model. Th 2D array is then extended vertically by mirror symmetry and in 3D with an azimuthal expansion, removing the potiential NaNs in the inner regions and smoothing the interpolated array with a gaussian kernel.
+In that example, the CO number density is retrieved from a 2D (prodimo)[https://prodimo.iwf.oeaw.ac.at] model.
+This 2D array is then extended vertically by mirror symmetry and in 3D with an azimuthal 
+expansion, removing the potential NaNs in the inner regions and smoothing interpolated
+values with a gaussian kernel.
 
 ***CASE 3: 2D abundance***
 
