@@ -540,7 +540,7 @@ class Model:
                 if distribution.data.unit!=1/u.cm**3:
                     raise ValueError(f"number density unit should be 1/cm^3, not {distribution.data.unit}.")
 
-            case "constant", float:
+            case "constant", float():
                 abundance = value
                 nH2 = self.gas.nH2(config=config)
 
