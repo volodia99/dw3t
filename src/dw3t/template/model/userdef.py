@@ -1,5 +1,5 @@
 import os
-from dataclasses import replace
+import sys
 
 import numpy as np
 import astropy.units as u
@@ -10,6 +10,11 @@ from nonos.api import GasDataSet
 from nonos._geometry import Axis
 from dw3t._typing import FArray1D
 from dw3t.model import Model, Grid, Gas, Dust
+
+if sys.version_info >= (3, 13):
+    from copy import replace
+else:
+    from dataclasses import replace
 
 def computeSizeMM(betai:FArray1D, *, rhoint:float, unit_length_au:float, unit_mass_msun:float) -> u.Quantity:
     sizeMM_k = betai/(np.sqrt(np.pi/8.0)*rhoint.to(u.g/u.cm/u.cm/u.cm)*(unit_length_au.to(u.cm))**2/unit_mass_msun.to(u.g))
