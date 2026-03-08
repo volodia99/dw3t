@@ -1,6 +1,11 @@
-from dataclasses import replace
+import sys
 import numpy as np
 from dw3t.model import Model
+
+if sys.version_info >= (3, 13):
+    from copy import replace
+else:
+    from dataclasses import replace
 
 def processing(*, model:"Model", kwargs:dict) -> "Model":
     inner_factor = kwargs["inner_factor"]

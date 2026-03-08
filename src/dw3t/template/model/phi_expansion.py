@@ -1,10 +1,15 @@
-from dataclasses import replace
+import sys
 
 import numpy as np
 import astropy.units as u
 
 from dw3t.model import Model
 from nonos._geometry import Axis
+
+if sys.version_info >= (3, 13):
+    from copy import replace
+else:
+    from dataclasses import replace
 
 def processing(*, model:"Model", kwargs:dict) -> "Model":
     #TODO: to be improved?
