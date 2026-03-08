@@ -28,7 +28,6 @@ repos:
   rev: v2.4.1
   hooks:
   - id: codespell
-    args: [--skip, '*.dat', --ignore-words-list, accreting]
 
 - repo: https://github.com/astral-sh/ruff-pre-commit
   rev: v0.14.10
