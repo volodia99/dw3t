@@ -88,7 +88,7 @@ def main(argv: list[str] | None = None) -> int:
             processing_file = processing_dict[0].get("file")
             if not processing_file.endswith(".py"):
                 raise ValueError(
-                    f"{proceprocessing_file=} should be a .py file. See example in dw3t/src/dw3t/template/model/userdef.py."
+                    f"{processing_file=} should be a .py file. See example in dw3t/src/dw3t/template/model/userdef.py."
                 )
             if not(os.path.isfile(processing_file)):
                 raise FileNotFoundError(f"absolute path of the file '{processing_file}' must exist.")
