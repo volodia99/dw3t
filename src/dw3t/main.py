@@ -11,7 +11,6 @@ from nonos._geometry import Axis
 from deep_chainmap import DeepChainMap
 
 from dw3t.model import load_model, Opacity
-from dw3t._typing import F, FArray2D
 from dw3t._parsing import is_set, list_of_middle_keys
 from dw3t.default import DEFAULT_LAYER, MANDATORY_SET
 

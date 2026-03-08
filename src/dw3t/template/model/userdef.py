@@ -7,7 +7,6 @@ import astropy.constants as uc
 
 import inifix
 from nonos.api import GasDataSet
-from nonos._geometry import Axis
 from dw3t._typing import FArray1D
 from dw3t.model import Model, Grid, Gas, Dust
 
@@ -42,7 +41,7 @@ def processing(*, model:"Model", kwargs:dict) -> "Model":
     dust = None
     if "gas" in model.component:
         #TODO: add flexibility
-        print(f"WARNING: Assuming no omegraframe.")
+        print("WARNING: Assuming no omegraframe.")
         gas = Gas(
             rho = ((np.repeat(ds["RHO"].data, nphi, axis=2) * UNIT_DENSITY).to(u.g / u.cm**3)),
             v1 = ((np.repeat(ds["VX1"].data, nphi, axis=2) * UNIT_VELOCITY).to(u.cm / u.s)),
@@ -51,7 +50,7 @@ def processing(*, model:"Model", kwargs:dict) -> "Model":
         )
 
     if "dust" in model.component:
-        print(f"WARNING: 'dust' not implemented in a general way with nonos. Implementation specific to IDEFIX.")
+        print("WARNING: 'dust' not implemented in a general way with nonos. Implementation specific to IDEFIX.")
         directory = ds._parameters_input["directory"]
         rhoint_csg = kwargs["internal_rho"]*(u.g/u.cm/u.cm/u.cm)
         inifile = inifix.load(os.path.join(directory, "idefix.ini"))

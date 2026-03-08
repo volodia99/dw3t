@@ -38,7 +38,7 @@ def processing(*, model:"Model", kwargs:dict) -> "Model":
 
     if "gas" in model.component:
         #TODO: add flexibility
-        print(f"WARNING: Assuming no omegraframe.")
+        print("WARNING: Assuming no omegraframe.")
         gas = Gas(
             rho = ((ds["RHO"].data * UNIT_DENSITY).to(u.g / u.cm**3)),#.value,
             v1 = ((ds["VX1"].data * UNIT_VELOCITY).to(u.cm / u.s)),#.value,
@@ -46,7 +46,7 @@ def processing(*, model:"Model", kwargs:dict) -> "Model":
             v3 = ((ds["VX3"].data * UNIT_VELOCITY).to(u.cm / u.s)),#.value,
         )
     if "dust" in model.component:
-        print(f"WARNING: 'dust' not implemented in a general way with nonos. Implementation specific to IDEFIX.")
+        print("WARNING: 'dust' not implemented in a general way with nonos. Implementation specific to IDEFIX.")
         directory = ds._parameters_input["directory"]
         rhoint_csg = kwargs["internal_rho"]*(u.g/u.cm/u.cm/u.cm)
         inifile = inifix.load(os.path.join(directory, "idefix.ini"))
