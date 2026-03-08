@@ -26,8 +26,8 @@ jobs:
         - '3.13'
         - '3.14'
         include:
-          - python-version: '3.11.4'
-            install-args: --resolution=lowest
+        - python-version: 3.11.4
+          install-args: --resolution=lowest
 
     runs-on: ubuntu-latest
     steps:
