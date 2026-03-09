@@ -7,6 +7,10 @@ DEFAULT_LAYER = {
         },
     },
     "dust": {
+        "temperature": {
+            "mode": "unset",
+            "value": "unset",
+        },
         "opacity": {
             "mix": {
                 "extrapolate_lambda_micron": {},

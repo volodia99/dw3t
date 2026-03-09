@@ -597,6 +597,11 @@ class Model:
                     smoothing=smoothing,
                     config=config,
                 )
+            if config["dust"]["temperature"]:
+                self._write_dusttemperature_inp(
+                    directory=directory, 
+                    config=config
+                )
             self._write_metadata(directory=directory)
         if "gas" in self.component:
             self._write_numberdens_inp(
@@ -963,6 +968,83 @@ class Model:
                             f"{zscat[ia, ilam, iang, 5]:.6e}\n" for iang in range(Nangle))
             print("done.")
         print()
+
+    def _write_dusttemperature_inp(self, *, directory:str, config:dict):
+        """
+        Function writes the 'dust_temperature.dat' input file.
+
+        Parameters
+        ----------
+        directory : str
+            Data directory in which the files are written.
+        """
+        if (mode:=config["dust"]["temperature"]["mode"]) not in ("constant","array"):
+            raise NotImplementedError(
+                f"{mode} should be 'constant' or 'array' for now."
+            )
+        value = config["dust"]["temperature"]["value"]
+        match mode, value:
+            case "constant", float():
+                temperature = value*np.ones_like(self.dust.rho.value)*u.K
+            case "array", "unset":
+                if "processing" not in config["dust"]:
+                    raise ValueError(
+                        f"'processing' has to be provided in the dust section in order to retrieve the temperature array from prodimo."
+                    )
+                processing_dict = np.atleast_1d(config["dust"]["processing"]).tolist()
+                processing_category = [d.get("mode") for d in processing_dict]
+                if len(processing_category)!=1 and "prodimo" not in processing_category:
+                    raise NotImplementedError(
+                        f"For now, we can only retrieve temperature array with prodimo mode. No other mode is implemented yet."
+                    )
+                if "prodimo_dir" not in processing_dict[0]:
+                    raise ValueError(
+                        f"'prodimo_dir' should be provided, when using mode='prodimo'."
+                    ) 
+                prodimo_directory = processing_dict[0]["prodimo_dir"]
+                pmodel = pread.read_prodimo(prodimo_directory)
+
+                x_2d, z_2d = ((pmodel.x*u.au).to(u.cm), (pmodel.z*u.au).to(u.cm))
+
+                x_3d = np.atleast_3d(x_2d)
+                z_3d = np.atleast_3d(z_2d)
+                pcyl_3d = np.zeros_like(x_3d.value)*u.radian
+
+                temperature_array = Array(
+                    cells=CellCenters3D(
+                        x1c=x_3d,
+                        x2c=z_3d,
+                        x3c=pcyl_3d,
+                        geometry=Geometry("polar"),
+                    ),
+                    data=np.atleast_3d(pmodel.td)*u.K,
+                    config=config,
+                )
+                temperature_array = temperature_array.from_prodimo_to(output_cells=self.grid.cell_centers_3d)
+                temperature = np.empty_like(self.dust.rho.value)
+                for kk in range(len(self.dust.size)):
+                    temperature[..., kk] = temperature_array.data
+
+                temperature = temperature*temperature_array.data.unit
+                if temperature.shape!=self.dust.rho.shape:
+                    raise ValueError(
+                        f"temperature and dust density do not have the same shape: {temperature.shape}!={self.dust.rho.shape}. "\
+                        "Try to perform some array processing."
+                    )
+                if temperature.unit!=u.K:
+                    raise ValueError(f"temperature unit should be K, not {temperature.data.unit}.")
+            case _ as unreachable:
+                assert_never(unreachable)
+
+        filename = f"dust_temperature.bdat"
+        path = os.path.join(directory, filename)
+
+        print(f"INFO: Writing {path}.....", end="")
+        with open(path, "wb") as f:
+            header = np.array([1, 8, temperature[..., 0].flatten().shape[0], self.dust.size.shape[0]], dtype=int)
+            header.tofile(f)
+            temperature.ravel(order="F").value.tofile(f)
+        print("done.")
 
     def _write_numberdens_inp(self, *, directory:str, config:dict):
         """
