@@ -54,3 +54,9 @@ no-build-package = [
     "pyyaml",
     "scipy",
 ]
+
+
+[tool.ruff]
+extend-select = [
+    "B", # flake8-bugbear
+]
