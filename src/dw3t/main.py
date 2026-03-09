@@ -115,7 +115,7 @@ def main(argv: list[str] | None = None) -> int:
                     raise ModuleNotFoundError(
                         f"No module named 'template.model.{processing_category[ii]}'."
                     )
-        for tm, kw in zip(template_modules, kwargs):
+        for tm, kw in zip(template_modules, kwargs, strict=True):
             model = tm.processing(model=model, kwargs=kw)
 
     if not is_set(config["simulation"]["output_dir"]):
