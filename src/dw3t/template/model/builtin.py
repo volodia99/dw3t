@@ -70,9 +70,12 @@ def processing(*, model:"Model", **kwargs) -> "Model":
         for kk in dustSize_ascending_indices:
             dustrho[..., kk] = ds[f"DUST{kk}_RHO"].data
         dust = Dust(
-            rho = ((dustrho * UNIT_DENSITY).to(u.g / u.cm**3)),#.value,
-            size = dustSize,
+            ## rho = ((dustrho * UNIT_DENSITY).to(u.g / u.cm**3)),#.value,
+            ## size = dustSize,
+            rho = ((np.expand_dims(dustrho[...,-1], axis=-1) * UNIT_DENSITY).to(u.g / u.cm**3)),#.value,
+            size = np.expand_dims(dustSize[-1], axis=-1),
         )
+        breakpoint()
 
     return replace(
         model,
