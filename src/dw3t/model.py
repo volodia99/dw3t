@@ -1107,7 +1107,7 @@ def load_model(
     component:list,
     config:dict,
 ) -> "Model":
-    if not (set(component) & set(["gas","dust"])):
+    if not set(component).issubset({"gas","dust"}):
         raise ValueError(
             f"{component=} should be 'gas', 'dust' or ['dust', 'gas']."
         )
