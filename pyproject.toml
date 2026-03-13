@@ -68,7 +68,7 @@ extend-select = [
     "PT", # flake8-pytest-style
     # "SIM", # flake8-simplify
     "YTT", # flake8-2020
-    # "FURB", # refurb
+    "FURB", # refurb
     # "RUF", # ruff
     "UP", # pyupgrade
 ]
