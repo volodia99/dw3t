@@ -98,12 +98,11 @@ def main(argv: list[str] | None = None) -> int:
             kwargs = [processing_dict[0].copy()]
             del kwargs[0]["mode"]
         else: 
-            if "builtin" in processing_category:
-                if not is_set(config["simulation"]["output_dir"]):
-                    config["simulation"]["output_dir"] = os.path.join(
-                        processing_dict[processing_category.index("builtin")]["input_dir"], 
-                        "radmc3d"
-                    )
+            if "builtin" in processing_category and not is_set(config["simulation"]["output_dir"]):
+                config["simulation"]["output_dir"] = os.path.join(
+                    processing_dict[processing_category.index("builtin")]["input_dir"], 
+                    "radmc3d"
+                )
             template_modules = []
             kwargs = []
             for ii in range(len(processing_category)):
