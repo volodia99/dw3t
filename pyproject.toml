@@ -69,6 +69,6 @@ extend-select = [
     # "SIM", # flake8-simplify
     "YTT", # flake8-2020
     # "FURB", # refurb
-    # "RUF", # ruff
+    "RUF", # ruff
     "UP", # pyupgrade
 ]

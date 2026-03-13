@@ -286,7 +286,7 @@ class Opacity:
                 raise ValueError(
                     "Optical constants should be ordered by monotonically increasing lambda"
                 )
-            if list(set_lambda)[0]==-1:
+            if next(iter(set_lambda))==-1:
                 print("WARNING: lambda is monotically decreasing. Reversing optical constants arrays.")
                 value_dict = vars(self.value)
                 for key in ("_l","_n","_k","_ll","_ln","_lk"):
