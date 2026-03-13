@@ -56,7 +56,19 @@ no-build-package = [
 ]
 
 
-[tool.ruff]
+[tool.ruff.lint]
 extend-select = [
+    "A", # flake8-builtins
+    # "ARG", # flake8-unused-arguments
     "B", # flake8-bugbear
+    # "C4", # flake8-comprehensions
+    "BLE", # flake8-blind-except
+    "FBT", # flake8-boolean-trap
+    "NPY", # flake8-numpy
+    "PT", # flake8-pytest-style
+    # "SIM", # flake8-simplify
+    "YTT", # flake8-2020
+    # "FURB", # refurb
+    # "RUF", # ruff
+    "UP", # pyupgrade
 ]
