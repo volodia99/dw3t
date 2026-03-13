@@ -1,6 +1,6 @@
 from dw3t.model import Model
 
-def processing(*, model:"Model", kwargs:dict) -> "Model":
+def processing(*, model:"Model", **_kwargs) -> "Model":
     model = Model(
         grid=model.grid,
         gas=model.gas,
