@@ -482,17 +482,18 @@ wheels = [
 
 [[package]]
 name = "nonos"
-version = "0.19.1"
+version = "0.20.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "inifix" },
     { name = "matplotlib" },
     { name = "numpy" },
-    { name = "typing-extensions", marker = "python_full_version < '3.12'" },
+    { name = "packaging" },
+    { name = "typing-extensions", marker = "python_full_version < '3.13'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/16/59/44b6a73bebbeeae0e2066d8c7e292aa6dfb47cea3e0b9416ebf72defd9fc/nonos-0.19.1.tar.gz", hash = "sha256:ae83b909c207bec1664c4dd3a57f449feb5dff8b06dd9f98e8fbc5a473530c6f", size = 44359, upload-time = "2025-12-10T15:56:45.733Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/2f/0b/c4d318b68c45990cd33e8c78c679fc277e74e3b153f0f1b770442e2089ac/nonos-0.20.0.tar.gz", hash = "sha256:57211d0333d59d2f486a5d0789f42b1f3e4e566f8ad8f21a32ed97a218d5be8a", size = 48969, upload-time = "2026-02-27T15:48:07.475Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/f4/05/eea320f8018258046abc56da2c71e7a780ab2f3decd4fde8890d103407b9/nonos-0.19.1-py3-none-any.whl", hash = "sha256:12b14aa5a36c287d3059deee05e1943cadb2a31b10531122966a6fcbc67b6f66", size = 46666, upload-time = "2025-12-10T15:56:44.605Z" },
+    { url = "https://files.pythonhosted.org/packages/b4/6e/d4a9e9b3b7f275b5ae2904fe051aebf7dc018e2ecfe9d8bfe4439a4fcf27/nonos-0.20.0-py3-none-any.whl", hash = "sha256:f0610c5a8b4e070c38efe157c480fad9e049142bed2d124e4da337618fcee403", size = 52546, upload-time = "2026-02-27T15:48:06.37Z" },
 ]
 
 [[package]]
