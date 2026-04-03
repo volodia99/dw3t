@@ -24,7 +24,6 @@ if sys.version_info >= (3, 13):
 else:
     from dataclasses import replace
 
-
 @dataclass(kw_only=True, slots=True, frozen=True)
 class CellCenters3D:
     x1c: FArray1D[u.Quantity]
@@ -206,6 +205,47 @@ class Array:
         )
 
 @dataclass(kw_only=True, slots=True, frozen=True)
+class ProdimoModel:
+    directory:str
+    config:dict
+
+    def load(self, *, quantity:str):
+        pmodel = pread.read_prodimo(self.directory)
+        match quantity:
+            case "tgas":
+                quantity_array = pmodel.tg
+                quantity_unit = u.K
+            case "tdust":
+                quantity_array = pmodel.td
+                quantity_unit = u.K
+            case ("abundance", species) if isinstance(species, str):
+                quantity_array = pmodel.getAbun(species.upper())
+                quantity_unit = u.dimensionless_unscaled
+            case ("number_density", species) if isinstance(species, str):
+                quantity_array = pmodel.nmol[:,:,pmodel.spnames[species.upper()]]
+                quantity_unit = 1./u.cm**3
+            case _ as unreachable:
+                assert_never(unreachable)
+
+        x_2d, z_2d = ((pmodel.x*u.au).to(u.cm), (pmodel.z*u.au).to(u.cm))
+
+        x_3d = np.atleast_3d(x_2d)
+        z_3d = np.atleast_3d(z_2d)
+        pcyl_3d = np.zeros_like(x_3d.value)*u.radian
+
+        quantityArray = Array(
+            cells=CellCenters3D(
+                x1c=x_3d,
+                x2c=z_3d,
+                x3c=pcyl_3d,
+                geometry=Geometry("polar"),
+            ),
+            data=np.atleast_3d(quantity_array)*quantity_unit,
+            config=self.config,
+        )
+        return quantityArray
+
+@dataclass(kw_only=True, slots=True, frozen=True)
 class Grid:
     x1: FArray1D[u.Quantity]
     x2: FArray1D[u.Quantity]
@@ -376,185 +416,85 @@ class Model:
     def temperature(self, config:dict) -> "Array":
         if "gas" not in self.component:
             raise ValueError(
-                "temperature method is defined if there is a gas component."
+                "gas temperature is defined if there is a gas component."
             )
         config_gas = config["gas"]
         if temperature_dict:=config_gas["temperature"]:
             mode = temperature_dict["mode"]
+            value = temperature_dict["value"]
         else:
             raise ValueError(
                 "Undefined treatment of temperature. Either use 'tgas_eq_tdust = 1' in radmc3d.inp, or provide 'temperature' in the gas section."
             )
-        match mode:
-            case "array":
-                if "processing" not in config["gas"]:
+        match mode, value:
+            case "constant", float():
+                temperature = value*np.ones_like(self.gas.rho.value)*u.K
+            case "prodimo_array", "unset":
+                prodimo_dir = config["simulation"]["prodimo_dir"]
+                if not is_set(prodimo_dir):
                     raise ValueError(
-                        "'processing' has to be provided in the gas section in order to retrieve the temperature array from prodimo."
+                        "'prodimo_dir' should be defined in ['simulation'] to retrieve the gas temperature from a prodimo model."
                     )
-                processing_dict = np.atleast_1d(config["gas"]["processing"]).tolist()
-                processing_category = [d.get("mode") for d in processing_dict]
-                if len(processing_category)!=1 and "prodimo" not in processing_category:
-                    raise NotImplementedError(
-                        "For now, we can only retrieve temperature array with prodimo mode. No other mode is implemented yet."
-                    )
-                if "prodimo_dir" not in processing_dict[0]:
-                    raise ValueError(
-                        "'prodimo_dir' should be provided, when using mode='prodimo'."
-                    ) 
-                prodimo_directory = processing_dict[0]["prodimo_dir"]
-                pmodel = pread.read_prodimo(prodimo_directory)
-
-                x_2d, z_2d = ((pmodel.x*u.au).to(u.cm), (pmodel.z*u.au).to(u.cm))
-
-                x_3d = np.atleast_3d(x_2d)
-                z_3d = np.atleast_3d(z_2d)
-                pcyl_3d = np.zeros_like(x_3d.value)*u.radian
-
-                temperature = Array(
-                    cells=CellCenters3D(
-                        x1c=x_3d,
-                        x2c=z_3d,
-                        x3c=pcyl_3d,
-                        geometry=Geometry("polar"),
-                    ),
-                    data=np.atleast_3d(pmodel.tg)*u.K,
+                temperature = ProdimoModel(
+                    directory=prodimo_dir,
                     config=config,
-                )
-                temperature = temperature.from_prodimo_to(output_cells=self.grid.cell_centers_3d)
-                if temperature.data.shape!=self.gas.rho.shape:
+                ).load(quantity="tgas")
+                temperature = temperature.from_prodimo_to(output_cells=self.grid.cell_centers_3d).data
+                if temperature.shape!=self.gas.rho.shape:
                     raise ValueError(
-                        f"temperature and gas density do not have the same shape: {temperature.data.shape}!={self.gas.rho.shape}. "\
+                        f"temperature and gas density do not have the same shape: {temperature.shape}!={self.gas.rho.shape}. "\
                         "Try to perform some array processing."
                     )
-                if temperature.data.unit!=u.K:
-                    raise ValueError(f"temperature unit should be K, not {temperature.data.unit}.")
+                if temperature.unit!=u.K:
+                    raise ValueError(f"temperature unit should be K, not {temperature.unit}.")
 
             case _ as unreachable:
                 assert_never(unreachable)
         return temperature
 
-    def number_density(self, config:dict) -> "Array":
+    def spatial_distribution(self, config:dict, target:str) -> "Array":
         if "gas" not in self.component:
             raise ValueError(
-                "number_density method is defined if there is a gas component."
+                "number_density is defined if there is a gas component."
             )
         config_gas = config["gas"]
         species = config_gas["species"]
-        abundance = config_gas["abundance"]
-        mode = abundance["mode"]
-        value = abundance["value"]
+        target_dict = config_gas[target]
+        mode = target_dict["mode"]
+        value = target_dict["value"]
 
+        nH2 = self.gas.nH2(config=config)
         match mode, value:
-            case "unset", "unset":
-                if "processing" not in config["gas"]:
-                    raise ValueError(
-                        "'processing' has to be provided in the gas section in order to retrieve the number density array from prodimo."
-                    )
-                processing_dict = np.atleast_1d(config["gas"]["processing"]).tolist()
-                processing_category = [d.get("mode") for d in processing_dict]
-                if len(processing_category)!=1 and "prodimo" not in processing_category:
-                    raise NotImplementedError(
-                        "For now, we can only retrieve number density array with prodimo mode. No other mode is implemented yet."
-                    )
-                if "prodimo_dir" not in processing_dict[0]:
-                    raise ValueError(
-                        "'prodimo_dir' should be provided, when using mode='prodimo'."
-                    ) 
-                prodimo_directory = processing_dict[0]["prodimo_dir"]
-                pmodel = pread.read_prodimo(prodimo_directory)
-
-                x_2d, z_2d = ((pmodel.x*u.au).to(u.cm), (pmodel.z*u.au).to(u.cm))
-
-                x_3d = np.atleast_3d(x_2d)
-                z_3d = np.atleast_3d(z_2d)
-                pcyl_3d = np.zeros_like(x_3d.value)*u.radian
-
-                distribution = Array(
-                    cells=CellCenters3D(
-                        x1c=x_3d,
-                        x2c=z_3d,
-                        x3c=pcyl_3d,
-                        geometry=Geometry("polar"),
-                    ),
-                    data=np.atleast_3d(pmodel.nmol[:,:,pmodel.spnames[species.upper()]])*(1/u.cm**3),
-                    config=config,
-                )
-                distribution = distribution.from_prodimo_to(output_cells=self.grid.cell_centers_3d)
-                nH2 = self.gas.nH2(config=config)
-                if distribution.data.shape!=nH2.shape:
-                    raise ValueError(
-                        f"number density of species and nH2 do not have the same shape: {distribution.data.shape}!={nH2.shape}. "\
-                        "Try to perform some array processing."
-                    )
-                if distribution.data.unit!=1/u.cm**3:
-                    raise ValueError(f"number density unit should be 1/cm^3, not {distribution.data.unit}.")
-
-            case "array", "unset":
-                if "processing" not in config["gas"]:
-                    raise ValueError(
-                        "'processing' has to be provided in the gas section in order to retrieve the number density array from prodimo."
-                    )
-                processing_dict = np.atleast_1d(config["gas"]["processing"]).tolist()
-                processing_category = [d.get("mode") for d in processing_dict]
-                if len(processing_category)!=1 and "prodimo" not in processing_category:
-                    raise NotImplementedError(
-                        "For now, we can only retrieve number density array with prodimo mode. No other mode is implemented yet."
-                    )
-                if "prodimo_dir" not in processing_dict[0]:
-                    raise ValueError(
-                        "'prodimo_dir' should be provided, when using mode='prodimo'."
-                    ) 
-                prodimo_directory = processing_dict[0]["prodimo_dir"]
-                pmodel = pread.read_prodimo(prodimo_directory)
-
-                x_2d, z_2d = ((pmodel.x*u.au).to(u.cm), (pmodel.z*u.au).to(u.cm))
-
-                x_3d = np.atleast_3d(x_2d)
-                z_3d = np.atleast_3d(z_2d)
-                pcyl_3d = np.zeros_like(x_3d.value)*u.radian
-
-                abundance = Array(
-                    cells=CellCenters3D(
-                        x1c=x_3d,
-                        x2c=z_3d,
-                        x3c=pcyl_3d,
-                        geometry=Geometry("polar"),
-                    ),
-                    data=np.atleast_3d(pmodel.getAbun(species.upper()))*u.dimensionless_unscaled,
-                    config=config,
-                )
-                abundance = abundance.from_prodimo_to(output_cells=self.grid.cell_centers_3d)
-                nH2 = self.gas.nH2(config=config)
-                if abundance.data.shape!=nH2.shape:
-                    raise ValueError(
-                        f"abundance and nH2 do not have the same shape: {abundance.data.shape}!={nH2.shape}. "\
-                        "Try to perform some array processing."
-                    )
-                distribution = Array(
-                    cells=abundance.cells,
-                    data=abundance.data*nH2,
-                    config=config,
-                )
-                if distribution.data.unit!=1/u.cm**3:
-                    raise ValueError(f"number density unit should be 1/cm^3, not {distribution.data.unit}.")
-
             case "constant", float():
-                abundance = value
-                nH2 = self.gas.nH2(config=config)
-
-                distribution = Array(
-                    cells=CellCenters3D(
-                        x1c=self.grid.cell_centers_3d.x1c,
-                        x2c=self.grid.cell_centers_3d.x2c,
-                        x3c=self.grid.cell_centers_3d.x3c,
-                        geometry=self.grid.cell_centers_3d.geometry,
-                    ),
-                    data=abundance*nH2,
+                number_density = value
+                if target=="abundance":
+                    number_density*=nH2
+                elif target=="number_density":
+                    number_density*=(1/u.cm**3)
+            case "prodimo_array", "unset":
+                prodimo_dir = config["simulation"]["prodimo_dir"]
+                if not is_set(prodimo_dir):
+                    raise ValueError(
+                        f"'prodimo_dir' should be defined in ['simulation'] to retrieve {target} from a prodimo model."
+                    )
+                prodimo_dir = config["simulation"]["prodimo_dir"]
+                number_density = ProdimoModel(
+                    directory=prodimo_dir,
                     config=config,
-                )
+                ).load(quantity=(target, species))
+                number_density = number_density.from_prodimo_to(output_cells=self.grid.cell_centers_3d).data
+                if number_density.shape!=nH2.shape:
+                    raise ValueError(
+                        f"number density of species and nH2 do not have the same shape: {number_density.shape}!={nH2.shape}. "\
+                        "Try to perform some array processing."
+                    )
+                if target=="abundance":
+                    number_density*=nH2
+                if number_density.unit!=1/u.cm**3:
+                    raise ValueError(f"number density unit should be 1/cm^3, not {number_density.unit}.")
             case _ as unreachable:
                 assert_never(unreachable)
-        return distribution
+        return number_density
 
     def write_files(
         self, 
@@ -597,7 +537,7 @@ class Model:
                     smoothing=smoothing,
                     config=config,
                 )
-            if config["dust"]["temperature"]:
+            if is_set(config["dust"]["temperature"]["mode"]):
                 self._write_dusttemperature_inp(
                     directory=directory, 
                     config=config
@@ -609,7 +549,7 @@ class Model:
                 config=config
             )
             self._write_gas_velocity_inp(directory=directory)
-            if config["gas"]["temperature"]:
+            if is_set(config["gas"]["temperature"]["mode"]):
                 self._write_gastemperature_inp(
                     directory=directory, 
                     config=config
@@ -978,72 +918,50 @@ class Model:
         directory : str
             Data directory in which the files are written.
         """
-        if (mode:=config["dust"]["temperature"]["mode"]) not in ("constant","array"):
-            raise NotImplementedError(
-                f"{mode} should be 'constant' or 'array' for now."
+        if "dust" not in self.component:
+            raise ValueError(
+                "dust temperature is defined if there is a dust component."
             )
+        mode = config["dust"]["temperature"]["mode"]
         value = config["dust"]["temperature"]["value"]
         match mode, value:
             case "constant", float():
-                temperature = value*np.ones_like(self.dust.rho.value)*u.K
-            case "array", "unset":
-                if "processing" not in config["dust"]:
+                temperature_multiple = value*np.ones_like(self.dust.rho.value)*u.K
+            case "prodimo_array", "unset":
+                prodimo_dir = config["simulation"]["prodimo_dir"]
+                if not is_set(prodimo_dir):
                     raise ValueError(
-                        f"'processing' has to be provided in the dust section in order to retrieve the temperature array from prodimo."
+                        "'prodimo_dir' should be defined in ['simulation'] to retrieve the dust temperature from a prodimo model."
                     )
-                processing_dict = np.atleast_1d(config["dust"]["processing"]).tolist()
-                processing_category = [d.get("mode") for d in processing_dict]
-                if len(processing_category)!=1 and "prodimo" not in processing_category:
-                    raise NotImplementedError(
-                        f"For now, we can only retrieve temperature array with prodimo mode. No other mode is implemented yet."
-                    )
-                if "prodimo_dir" not in processing_dict[0]:
-                    raise ValueError(
-                        f"'prodimo_dir' should be provided, when using mode='prodimo'."
-                    ) 
-                prodimo_directory = processing_dict[0]["prodimo_dir"]
-                pmodel = pread.read_prodimo(prodimo_directory)
-
-                x_2d, z_2d = ((pmodel.x*u.au).to(u.cm), (pmodel.z*u.au).to(u.cm))
-
-                x_3d = np.atleast_3d(x_2d)
-                z_3d = np.atleast_3d(z_2d)
-                pcyl_3d = np.zeros_like(x_3d.value)*u.radian
-
-                temperature_array = Array(
-                    cells=CellCenters3D(
-                        x1c=x_3d,
-                        x2c=z_3d,
-                        x3c=pcyl_3d,
-                        geometry=Geometry("polar"),
-                    ),
-                    data=np.atleast_3d(pmodel.td)*u.K,
+                prodimo_dir = config["simulation"]["prodimo_dir"]
+                temperature_single = ProdimoModel(
+                    directory=prodimo_dir,
                     config=config,
-                )
-                temperature_array = temperature_array.from_prodimo_to(output_cells=self.grid.cell_centers_3d)
-                temperature = np.empty_like(self.dust.rho.value)
+                ).load(quantity="tdust")
+                temperature_single = temperature_single.from_prodimo_to(output_cells=self.grid.cell_centers_3d).data
+                temperature_multiple = np.empty_like(self.dust.rho.value)
                 for kk in range(len(self.dust.size)):
-                    temperature[..., kk] = temperature_array.data
+                    temperature_multiple[..., kk] = temperature_single
 
-                temperature = temperature*temperature_array.data.unit
-                if temperature.shape!=self.dust.rho.shape:
+                temperature_multiple = temperature_multiple*temperature_single.unit
+                if temperature_multiple.shape!=self.dust.rho.shape:
                     raise ValueError(
-                        f"temperature and dust density do not have the same shape: {temperature.shape}!={self.dust.rho.shape}. "\
+                        f"temperature and dust density do not have the same shape: {temperature_multiple.shape}!={self.dust.rho.shape}. "\
                         "Try to perform some array processing."
                     )
-                if temperature.unit!=u.K:
-                    raise ValueError(f"temperature unit should be K, not {temperature.data.unit}.")
+                if temperature_multiple.unit!=u.K:
+                    raise ValueError(f"temperature unit should be K, not {temperature_multiple.unit}.")
             case _ as unreachable:
                 assert_never(unreachable)
 
-        filename = f"dust_temperature.bdat"
+        filename = "dust_temperature.bdat"
         path = os.path.join(directory, filename)
 
         print(f"INFO: Writing {path}.....", end="")
         with open(path, "wb") as f:
-            header = np.array([1, 8, temperature[..., 0].flatten().shape[0], self.dust.size.shape[0]], dtype=int)
+            header = np.array([1, 8, temperature_multiple[..., 0].flatten().shape[0], self.dust.size.shape[0]], dtype=int)
             header.tofile(f)
-            temperature.ravel(order="F").value.tofile(f)
+            temperature_multiple.ravel(order="F").value.tofile(f)
         print("done.")
 
     def _write_numberdens_inp(self, *, directory:str, config:dict):
@@ -1056,7 +974,20 @@ class Model:
             Data directory in which the files are written.
         """
         species = config["gas"]["species"]
-        numberrho = self.number_density(config=config).data
+        if is_set(config["gas"]["number_density"]["mode"]) and is_set(config["gas"]["abundance"]["mode"]):
+            raise ValueError(
+                "Choose between 'number_density' and 'abundance', not both."
+            )
+        elif not is_set(config["gas"]["number_density"]["mode"]) and not is_set(config["gas"]["abundance"]["mode"]):
+            raise ValueError(
+                f"You need to define 'number_density' ({config['gas']['number_density']['mode']}) or 'abundance' ({config['gas']['number_density']['mode']}) to compute the number density."
+            )
+
+        if is_set(config["gas"]["number_density"]["mode"]):
+            target = "number_density"
+        if is_set(config["gas"]["abundance"]["mode"]):
+            target = "abundance"
+        numberrho = self.spatial_distribution(config=config, target=target)
 
         filename = f"numberdens_{species}.binp"
         path = os.path.join(directory, filename)
@@ -1098,7 +1029,7 @@ class Model:
         directory : str
             Data directory in which the files are written.
         """
-        temperature = self.temperature(config=config).data
+        temperature = self.temperature(config=config)
 
         filename = "gas_temperature.binp"
         path = os.path.join(directory, filename)

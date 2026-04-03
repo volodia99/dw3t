@@ -1,6 +1,7 @@
 DEFAULT_LAYER = {
     "simulation": {
         "output_dir": "unset",
+        "prodimo_dir": "unset",
         "simulation_files_only": False,
         "processing": {
             "mode": "identity",
@@ -8,8 +9,8 @@ DEFAULT_LAYER = {
     },
     "dust": {
         "temperature": {
-            "mode": "unset",
-            "value": "unset",
+            "mode":"unset",
+            "value":"unset",
         },
         "opacity": {
             "mix": {
@@ -21,10 +22,17 @@ DEFAULT_LAYER = {
     },
     "gas": {
         "abundance": {
-            "mode": "unset",
-            "value": "unset",
+            "mode":"unset",
+            "value":"unset",
         },
-        "temperature": {},
+        "number_density": {
+            "mode":"unset",
+            "value":"unset",
+        },
+        "temperature": {
+            "mode":"unset",
+            "value":"unset",
+        },
     },
     "radmc3d": {},
     "stars": {
