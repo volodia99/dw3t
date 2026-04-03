@@ -63,7 +63,7 @@ def main(argv: list[str] | None = None) -> int:
 
     component = config["simulation"]["component"]
     component = np.atleast_1d(component).tolist()
-    if not (set(component) & set(["gas","dust"])):
+    if not set(component).issubset({"gas","dust"}):
         raise ValueError(
             f"{component=} should be 'dust', 'gas' or ['dust', 'gas']."
         )
