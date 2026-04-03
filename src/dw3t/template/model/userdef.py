@@ -32,10 +32,10 @@ def processing(*, model:"Model", **kwargs) -> "Model":
     model = replace(
         model,
         grid=Grid(
-            x1=((ds.coords.get_axis_array("r") * unit_length_au).to(u.cm)),#.value,
-            x2=ds.coords.get_axis_array("theta") * u.radian,
-            x3=ds.coords.get_axis_array("phi") * u.radian,
-            geometry=ds.native_geometry,
+            x1=((ds.coordinates.get_axis_array("r") * unit_length_au).to(u.cm)),#.value,
+            x2=ds.coordinates.get_axis_array("theta") * u.radian,
+            x3=ds.coordinates.get_axis_array("phi") * u.radian,
+            geometry=ds.geometry,
         ),
     )
 
