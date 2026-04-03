@@ -203,7 +203,7 @@ sdist = { url = "https://files.pythonhosted.org/packages/e9/aa/750cf152780c6b31e
 
 [[package]]
 name = "dw3t"
-version = "0.1.0"
+version = "0.2.0"
 source = { editable = "." }
 dependencies = [
     { name = "astropy" },

@@ -1,6 +1,6 @@
 [project]
 name = "dw3t"
-version = "0.1.0"
+version = "0.2.0"
 description = "Interface between spherical datasets from simulation outputs and radmc3d"
 readme = "README.md"
 authors = [
