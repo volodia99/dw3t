@@ -64,14 +64,16 @@ def processing(*, model:"Model", **kwargs) -> "Model":
             rhoint=rhoint_csg,
             unit_length_au=model.unit_length_au,
             unit_mass_msun=model.unit_mass_msun,
-            )#.value
+            )
         dustSize_ascending_indices = np.argsort(dustSize)
         dustrho = np.empty((*grid.shape, len(dustSize)))
         for kk in dustSize_ascending_indices:
             dustrho[..., kk] = ds[f"DUST{kk}_RHO"].data
         dust = Dust(
-            rho = ((dustrho * UNIT_DENSITY).to(u.g / u.cm**3)),#.value,
+            rho = ((dustrho * UNIT_DENSITY).to(u.g / u.cm**3)),
             size = dustSize,
+            # rho = ((np.expand_dims(dustrho[...,-1], axis=-1) * UNIT_DENSITY).to(u.g / u.cm**3)),
+            # size = np.expand_dims(dustSize[-1], axis=-1),
         )
 
     return replace(

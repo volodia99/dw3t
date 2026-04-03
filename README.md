@@ -43,6 +43,9 @@ You can find an example for the parameter file in `dw3t/dw3t.toml`.
 - `unit_mass_msun` : code unit of mass \[solMass\] (`float`)
 - `component` : which component is included (`"dust"` and/or `"gas"`) (`str|list[str]`)
 
+***Conditionally mandatory parameter:***
+- `prodimo_dir` : if you need to retrieve quantities from a prodimo model, like the dust temperature, the gas temperature, the number density of a given species or its abundance, you have to indicate the path of the prodimo model directory (`str`).
+
 ***Optional parameters:***
 - `output_dir` : directory where the radmc3d files are computed (`str`). Default: `f"{input_dir}/radmc3d"`.
 - `simulation_files_only` : computes only the radmc3d files related to the simulation, not the generic mandatory radmc3d files (`bool`). Default: `False`.
@@ -84,9 +87,35 @@ See in `src/dw3t/template/model/userdef.py` for more info.
 
 ### 2. Section `[dust]`
 
-This section for now contains only the information about the `opacity`, especially what dust mix is used, with its corresponding internal density if needed. We use the [dsharp_opac](https://github.com/birnstiel/dsharp_opac/) library to compute the optical constants associated to the mix. Two solutions are possible:
+This section contains the information about the dust `temperature` and the dust `opacity`.
 
-### (i) Using the available mixes in dsharp_opac
+#### 2.1. `temperature`
+
+radmc3d needs to have as an input the dust temperature. You have two options:
+- give a constant value in each cell of the grid (mainly for testing purposes)
+```toml
+[dust]
+temperature             = {
+    mode = "constant",
+    value = 20.0,
+}
+```
+***Remark:*** Note that the temperature has to be given in Kelvin units, and be sure that `value` is a float.
+
+- give a 2D array from a prodimo model
+```toml
+[dust]
+temperature             = {
+    mode = "prodimo_array",
+}
+```
+***Remark:*** Remember to define the directory of the prodimo model in the `[simulation]` section.
+
+#### 2.2. `opacity`
+
+We need to indicate what dust mix is used, with its corresponding internal density if needed. We use the [dsharp_opac](https://github.com/birnstiel/dsharp_opac/) library to compute the optical constants associated to the mix. Two solutions are possible:
+
+#### (i) Using the available mixes in dsharp_opac
 
 ```toml
 [dust.opacity]
@@ -101,7 +130,7 @@ mix = {mode="ricci2010"}
 See the corresponding papers for more info.
 
 
-### (ii) Using a optical constant file
+#### (ii) Using a optical constant file
 
 Including the opacity constants. In that case you need to provide the internal density (`rho` \[g/cm3\]) of the mix.
 ```toml
@@ -122,16 +151,15 @@ In the `mix` dictionary, you can also provide:
 
 The main parameter here is `species`. 
 - `species` (`str`): name of the species. Used to construct the lines.inp, molecule_\*.dat and numberdens_\*.inp radmc3d files.
+- `abundance` (`dict`) **or** `number_density` (`dict`): if set, computes the molecular abundance or the number density of the corresponding `species`. It is defined with the keys `mode` (`str`), and `value` (`float`). `abundance` and `number_density` are mutually exclusive.
 
 ***Optional parameters:***
 
-- `processing` (`list[dict]`) used to process the gas-related arrays, if needed (for now, the number density and/or the gas temperature).
-- `abundance` (`dict`): if set, computes the molecular abundance of the corresponding `species`. It is defined with the keys `mode` (`str`), and `value` (`float`).
 - `temperature` (`dict`): if set, retrieve the gas temperature, for now from a prodimo model. It is defined with the key `mode` (`str`).
 
-#### 3.1. `abundance`
+#### 3.1. `abundance` | `number_density`
 
-***CASE 1: constant abundance***
+***CASE 1.A: constant abundance***
 
 When `mode="constant"`, the corresponding `value` must be defined:
 ```toml
@@ -142,49 +170,53 @@ abundance = {
     value = 1e-4,
 }
 ```
-In that example, the gas number density resulting from the simulated output is multiplied by a constant abundance 1e-4, corresponding to a prescribed abundance for CO.
+In that example, the gas H2 number density resulting from the simulated output is multiplied by a constant abundance 1e-4, corresponding to a prescribed abundance for CO.
 
-***CASE 2: 2D number density***
+***CASE 1.B: constant number density***
 
-By default, an `abundance` that is not provided is unset. `processing` has then to be given to indicate how to retrieve the number density array associated to `species`, instead of computing it from the simulated gas density times an `abundance`.
 ```toml
 [gas]
 species = "co"
-processing = [
-    {mode="prodimo", prodimo_dir="path_to_prodimo_model_directory"},
-]
+number_density = {
+    mode = "constant",
+    value = 1e4,
+}
 ```
-In that example, the CO number density is retrieved from a 2D (prodimo)[https://prodimo.iwf.oeaw.ac.at] model.
-This 2D array is then extended vertically by mirror symmetry and in 3D with an azimuthal 
-expansion, removing the potential NaNs in the inner regions and smoothing interpolated
-values with a gaussian kernel.
+In that example, the CO number density is chosen constant and equal to 1e4 cm^-3.
 
-***CASE 3: 2D abundance***
+***CASE 2.A: 2D abundance***
 
-When `mode="array"`, `value` is `None` and the `processing` argument must be specified to indicate how to retrieve the abundance array associated to `species`.
+It is possible to retrieve the abundance array associated to `species` from a prodimo model, instead of computing it from the simulated gas density times an `abundance`.
 ```toml
 [gas]
 species = "co"
 abundance = {
-    mode = "array",
+    mode = "prodimo_array",
 }
-processing = [
-    {mode="prodimo", prodimo_dir="path_to_prodimo_model_directory"},
-]
 ```
-***Remark:*** In CASE 2, we retrieve the CO number density array from a prodimo model, whereas in CASE 3 we retrieve the CO abundance array.
+In that example, the CO abundance is retrieved from a 2D (prodimo)[https://prodimo.iwf.oeaw.ac.at] model. This 2D array is then extended vertically by mirror symmetry and in 3D with an azimuthal expansion, removing the potential NaNs in the inner regions and smoothing interpolated values with a gaussian kernel.
+
+***CASE 2.B: 2D number density***
+
+We can do a similar procedure to retrieve the number density array associated to `species`, from a prodimo model.
+```toml
+[gas]
+species = "co"
+number_density = {
+    mode = "prodimo_array",
+}
+```
+
+***Remark:*** In CASE 2.A, we retrieve the CO abundance array from a prodimo model, whereas in CASE 2.B we retrieve the CO number density array.
 
 #### 3.2. `temperature`
 
-When `mode="array"`, the `processing` argument must be specified to indicate how to retrieve the gas temperature array, from now. For now the processing is the same for the temperature and the number density, if asked.
+For the gas temperature, a similar procedure is possible as for the `abundance` | `number_density`. Again, a `prodimo_dir` argument must be specified in the `[simulation]` section to indicate how to retrieve the gas temperature array. For now the processing is the same for the temperature and the number density, if asked.
 ```toml
 [gas]
 temperature = {
-    mode = "array",
+    mode = "prodimo_array",
 }
-processing = [
-    {mode="prodimo", prodimo_dir="path_to_prodimo_model_directory"},
-]
 ```
 
 ### 4. radmc3d-specific sections
