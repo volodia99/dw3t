@@ -63,7 +63,7 @@ def main(argv: list[str] | None = None) -> int:
 
     component = config["simulation"]["component"]
     component = np.atleast_1d(component).tolist()
-    if not (set(component) & set(["gas","dust"])):
+    if not set(component).issubset({"gas","dust"}):
         raise ValueError(
             f"{component=} should be 'dust', 'gas' or ['dust', 'gas']."
         )
@@ -98,12 +98,11 @@ def main(argv: list[str] | None = None) -> int:
             kwargs = [processing_dict[0].copy()]
             del kwargs[0]["mode"]
         else: 
-            if "builtin" in processing_category:
-                if not is_set(config["simulation"]["output_dir"]):
-                    config["simulation"]["output_dir"] = os.path.join(
-                        processing_dict[processing_category.index("builtin")]["input_dir"], 
-                        "radmc3d"
-                    )
+            if "builtin" in processing_category and not is_set(config["simulation"]["output_dir"]):
+                config["simulation"]["output_dir"] = os.path.join(
+                    processing_dict[processing_category.index("builtin")]["input_dir"], 
+                    "radmc3d"
+                )
             template_modules = []
             kwargs = []
             for ii in range(len(processing_category)):
@@ -116,7 +115,7 @@ def main(argv: list[str] | None = None) -> int:
                         f"No module named 'template.model.{processing_category[ii]}'."
                     ) from None
         for tm, kw in zip(template_modules, kwargs, strict=True):
-            model = tm.processing(model=model, kwargs=kw)
+            model = tm.processing(model=model, **kw)
 
     if not is_set(config["simulation"]["output_dir"]):
         MANDATORY_SET.update(["output_dir"])
