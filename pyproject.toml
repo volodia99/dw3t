@@ -66,7 +66,7 @@ extend-select = [
     "FBT", # flake8-boolean-trap
     "NPY", # flake8-numpy
     "PT", # flake8-pytest-style
-    # "SIM", # flake8-simplify
+    "SIM", # flake8-simplify
     "YTT", # flake8-2020
     # "FURB", # refurb
     # "RUF", # ruff
