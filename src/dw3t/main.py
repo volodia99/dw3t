@@ -116,7 +116,7 @@ def main(argv: list[str] | None = None) -> int:
                         f"No module named 'template.model.{processing_category[ii]}'."
                     ) from None
         for tm, kw in zip(template_modules, kwargs, strict=True):
-            model = tm.processing(model=model, kwargs=kw)
+            model = tm.processing(model=model, **kw)
 
     if not is_set(config["simulation"]["output_dir"]):
         MANDATORY_SET.update(["output_dir"])

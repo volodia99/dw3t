@@ -7,7 +7,7 @@ if sys.version_info >= (3, 13):
 else:
     from dataclasses import replace
 
-def processing(*, model:"Model", kwargs:dict) -> "Model":
+def processing(*, model:"Model", **kwargs) -> "Model":
     inner_factor = kwargs["inner_factor"]
     r_spherical = model.grid.x1c
     imask, = np.where(r_spherical < inner_factor * r_spherical.min())

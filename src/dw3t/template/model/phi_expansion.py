@@ -11,7 +11,7 @@ if sys.version_info >= (3, 13):
 else:
     from dataclasses import replace
 
-def processing(*, model:"Model", kwargs:dict) -> "Model":
+def processing(*, model:"Model", **kwargs) -> "Model":
     #TODO: to be improved?
     if model.dimension!=2:
         raise ValueError(f"phi_expansion works in 2D, model is {model.dimension}D.")
