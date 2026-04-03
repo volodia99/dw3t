@@ -626,8 +626,7 @@ class Model:
 
         print(f"INFO: Writing {path}.....", end="")
         with open(path, "w") as f:
-            for key in config:
-                f.write(f"{key} = {config[key]}\n")
+            f.writelines(f"{key} = {config[key]}\n" for key in config)
         print("done.")
 
     def _write_stars_inp(self, *, directory:str, config:dict):
@@ -663,8 +662,7 @@ class Model:
                 f"{0:.6e} "\
                 f"{0:.6e}\n"
                 )
-            for lam in lam_grid:
-                f.write(f"{lam:.6e}\n")
+            f.writelines(f"{lam:.6e}\n" for lam in lam_grid)
             f.write(f"-{T_star:.6e}\n")
         print("done.")
 
@@ -689,8 +687,7 @@ class Model:
         print(f"INFO: Writing {path}.....", end="")
         with open(path, "w") as f:
             f.write(f"{lam_grid.shape[0]:d}\n")
-            for lam in lam_grid:
-                f.write(f"{lam:.6e}\n")
+            f.writelines(f"{lam:.6e}\n" for lam in lam_grid)
         print("done.")
 
     def _write_lines_inp(self, *, directory:str, config:dict):
@@ -950,27 +947,20 @@ class Model:
                 f.write(f"{Nlam:d}\n")
                 f.write(f"{Nangle:d}\n")
                 f.write("\n")
-                for ilam in range(Nlam):
-                    f.write(
-                        f"{lam_grid[ilam].value:.6e} "\
+                f.writelines(f"{lam_grid[ilam].value:.6e} "\
                         f"{opac_dict['k_abs'][ia, ilam]:.6e} "\
                         f"{opac_dict['k_sca'][ia, ilam]:.6e} "\
-                        f"{opac_dict['g'][ia, ilam]:.6e}\n"
-                    )
+                        f"{opac_dict['g'][ia, ilam]:.6e}\n" for ilam in range(Nlam))
                 f.write("\n")
-                for theta in opac_dict["theta"]:
-                    f.write(f"{theta:.2f}\n")
+                f.writelines(f"{theta:.2f}\n" for theta in opac_dict["theta"])
                 f.write("\n")
                 for ilam in range(Nlam):
-                    for iang in range(Nangle):
-                        f.write(
-                            f"{zscat[ia, ilam, iang, 0]:.6e} "\
+                    f.writelines(f"{zscat[ia, ilam, iang, 0]:.6e} "\
                             f"{zscat[ia, ilam, iang, 1]:.6e} "\
                             f"{zscat[ia, ilam, iang, 2]:.6e} "\
                             f"{zscat[ia, ilam, iang, 3]:.6e} "\
                             f"{zscat[ia, ilam, iang, 4]:.6e} "\
-                            f"{zscat[ia, ilam, iang, 5]:.6e}\n"
-                        )
+                            f"{zscat[ia, ilam, iang, 5]:.6e}\n" for iang in range(Nangle))
             print("done.")
         print()
 
@@ -1071,12 +1061,9 @@ class Model:
                 f"{1 if Nphi > 1 else 0:d}\n"
             )
             f.write(f"{Nr:d} {Ntheta:d} {Nphi:d}\n")
-            for x1 in self.grid.x1:
-                f.write(f"{x1.value:.12e}\n")
-            for x2 in self.grid.x2:
-                f.write(f"{x2.value:.12e}\n")
-            for x3 in self.grid.x3:
-                f.write(f"{x3.value:.12e}\n")
+            f.writelines(f"{x1.value:.12e}\n" for x1 in self.grid.x1)
+            f.writelines(f"{x2.value:.12e}\n" for x2 in self.grid.x2)
+            f.writelines(f"{x3.value:.12e}\n" for x3 in self.grid.x3)
         print("done.")
 
     def _write_dust_density_inp(self, *, directory:str):
