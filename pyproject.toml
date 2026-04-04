@@ -32,6 +32,12 @@ dev = [
     "pytest>=9.0.2",
 ]
 
+[tool.pytest]
+filterwarnings = [
+    "error",
+    "default:unclosed file:ResourceWarning", # https://github.com/birnstiel/dsharp_opac/pull/15
+]
+
 [tool.uv]
 constraint-dependencies = [
     # via astropy
