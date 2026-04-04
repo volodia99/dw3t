@@ -32,6 +32,7 @@ jobs:
         include:
         - python-version: 3.11.4
           install-args: --resolution=lowest
+          pytest-args: -Wdefault # don't error on ancient warnings
 
     runs-on: ubuntu-latest
     steps:
@@ -50,7 +51,7 @@ jobs:
       run: uv sync --group dev ${{ matrix.install-args }}
 
     - name: Test
-      run: uv run --no-sync pytest --color=yes
+      run: uv run --no-sync pytest --color=yes ${{ matrix.pytest-args }}
 
   # platform-tests:
   #   strategy:
