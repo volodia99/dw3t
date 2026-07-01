@@ -31,6 +31,7 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/4c/d4/6585f3b6fdb75648bca294664af4becc8aa2fb3fb08f4e4e9fd27e10d773/adjusttext-1.3.0.tar.gz", hash = "sha256:4ab75cd4453af4828876ac3e964f2c49be642ea834f0c1f7449558d5f12cbca1", size = 15724, upload-time = "2024-10-31T16:45:36.101Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/53/1c/8feedd607cc14c5df9aef74fe3af9a99bf660743b842a9b5b1865326b4aa/adjustText-1.3.0-py3-none-any.whl", hash = "sha256:da23d7b24b6db5ffa039bb136bfa556207365e32f48ac74b07ad26dd485bc691", size = 13154, upload-time = "2024-10-31T16:45:35.227Z" },
+    { url = "https://files.pythonhosted.org/packages/2d/80/7ad35ee5321a86b842f9e8516c8ae4c86f58db7b40e82ce9759f94517a50/adjusttext-1.3.0-py3-none-any.whl", hash = "sha256:bc6c118cd9d7caf6ae37f9355e51d840a2d7f64b4fb2956b8401de27c5af803b", size = 13264, upload-time = "2026-06-08T16:40:05.041Z" },
 ]
 
 [[package]]
@@ -750,7 +751,7 @@ wheels = [
 
 [[package]]
 name = "prodimopy"
-version = "2.5.3"
+version = "2.7.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "adjusttext" },
@@ -766,9 +767,9 @@ dependencies = [
     { name = "tqdm" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/77/e1/fd1f1aab5ea1a584b13712a2aff2587c910c36a8ffb9c4a3d8893e4cff2f/prodimopy-2.5.3.tar.gz", hash = "sha256:b56b75f2482234324d8daed7831a7638d4d41430e14f93b866f8c8a525cda28c", size = 211604, upload-time = "2026-03-05T09:19:54.766Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/5f/6e/0777b492590a2540a4ff27792fa60399b090198dd5db2200fd928a6f4be7/prodimopy-2.7.0.tar.gz", hash = "sha256:171a33f336c510300c70a5e9be499577d63059cec88cacc7083a0f8d2e4ef5fd", size = 232570, upload-time = "2026-06-15T16:49:56.677Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/2e/fe/4b0ce50aef88622c8680ac37ff4e446ed7d5d34d37afd35f9f12b67a3a54/prodimopy-2.5.3-py3-none-any.whl", hash = "sha256:fe8a8eac97b9bdf929dbb47477f322aac1467371dcb250bccaa77f79d721d0a8", size = 222089, upload-time = "2026-03-05T09:19:53.152Z" },
+    { url = "https://files.pythonhosted.org/packages/98/0a/8d2d588287ff6cc646987889647bf38b25bf556cb13f499aaf602ad42154/prodimopy-2.7.0-py3-none-any.whl", hash = "sha256:762e215538d1699a0cd750b2ccdf9a88af7ea4ac37860f1d01a44eb138c131df", size = 240420, upload-time = "2026-06-15T16:49:54.827Z" },
 ]
 
 [[package]]
